@@ -1,7 +1,7 @@
 import vamp
 import librosa
 
-path = "/Users/Clara/PycharmProjects/chord_rec_project/test.mp3"
+path = "test.mp3"
 data, rate = librosa.load(path)
 beat = vamp.collect(data, rate, "qm-vamp-plugins:qm-barbeattracker")
 
