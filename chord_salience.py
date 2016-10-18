@@ -1,7 +1,7 @@
 import numpy as np
 import vamp
 import librosa
-
+import get_features
 
 def get_binary_model():
     N_chord = 24;
@@ -20,13 +20,8 @@ def get_binary_model():
     return(chord_binary_model)
 
 
-def get_wide_chromagram(data,rate):
-    chroma = np.array(vamp.collect(data, rate, "nnls-chroma:nnls-chroma", output="chroma"))
-    return chroma
-
-
-def get_chord_salience(data,rate):
-    chromagram = get_wide_chromagram(data,rate)
+def get_chord_salience(data ,rate):
+    [step, chromagram] = get_features.get_wide_chromagram(data , rate)
     #print(chromagram)
     chord_template = get_binary_model()
     #print(chord_template)

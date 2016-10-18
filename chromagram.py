@@ -10,3 +10,4 @@ basschroma = np.array(vamp.collect(data, rate, "nnls-chroma:nnls-chroma", output
 
 print(chroma)
 print(basschroma)
+
