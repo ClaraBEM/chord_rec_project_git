@@ -1,5 +1,6 @@
 import vamp
 import numpy as np
+import librosa
 
 
 def get_chromagram(data, rate):
@@ -41,3 +42,9 @@ def get_label (data , rate):
         label.append(elem['label'])
     label = np.array(label)
     return label
+
+if __name__=='__main__':
+    path = "test.mp3"
+    data, rate = librosa.load(path)
+    [step, chroma] = get_chromagram(data,rate)
+    print(chroma)
