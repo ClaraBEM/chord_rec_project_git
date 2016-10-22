@@ -28,30 +28,31 @@ def get_chord_salience(data, rate):
     chord_salience = np.zeros(chromagram.shape)
     row = chromagram.shape[0]
     col = chromagram.shape[1]
-    for t in range(0,col):
-        for k in range(0,row):
+    for t in range(0, col):
+        for k in range(0, row):
             sum = 0;
-            for p in range(0,row):
+            for p in range(0, row):
                 # se il numeratore del logaritmo è = 0 log(0)= -inf quindi lo sostituiamo con un epsilon
-                if chord_template[p,k]==0:
+                if chord_template[p, k]==0:
                     chord_template_elem = eps
                 else:
-                    chord_template_elem = chord_template[p,k]
+                    chord_template_elem = chord_template[p, k]
                 if chromagram[p,t] == 0:
                     chromagram_elem = eps
                 else:
                     chromagram_elem = chromagram[p,t]
                 sum = sum + chord_template_elem * np.log10(chord_template_elem/chromagram_elem) + chromagram_elem - chord_template_elem
             distance_matrix[k, t] = sum
-        chord_salience[:, t] = min(distance_matrix[:, t])/distance_matrix[:,t]
+        chord_salience[:, t] = min(distance_matrix[:, t])/distance_matrix[:, t]
+    #MANCA MEDIAN FILTER
     #return chord_salience
-    return chord_salience
+    return [step, chord_salience]
 
 
 if __name__=="__main__":
     path = "test.mp3"
     data, rate = librosa.load(path)
-    chord_salience = get_chord_salience(data,rate)
+    chord_salience = get_chord_salience(data, rate)
     print(chord_salience)
 
 
