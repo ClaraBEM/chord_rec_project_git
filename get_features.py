@@ -10,7 +10,7 @@ def get_chromagram(data, rate):
     # parameters =
     dictionary = vamp.collect(data, rate, "nnls-chroma:nnls-chroma", output="chroma")
     matrix = dictionary['matrix']
-    step = matrix[0]
+    step = float(matrix[0])
     chromagram = np.array(matrix[1]).transpose()
     return [step, chromagram]
 
@@ -18,7 +18,7 @@ def get_chromagram(data, rate):
 def get_bass_chromagram(data, rate):
     dictionary = vamp.collect(data, rate, "nnls-chroma:nnls-chroma", output="basschroma")
     matrix = dictionary['matrix']
-    step = matrix[0]
+    step = float(matrix[0])
     basschromagram = np.array(matrix[1]).transpose()
     return [step, basschromagram]
 
@@ -28,7 +28,7 @@ def get_beat(data, rate):
     list = beat['list']
     timestamp = []
     for elem in list:
-        timestamp.append(elem['timestamp'])
+        timestamp.append(float(elem['timestamp']))
 
     timestamp = np.array(timestamp)
     return timestamp

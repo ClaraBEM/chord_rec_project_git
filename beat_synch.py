@@ -11,18 +11,15 @@ def beat_synch(matrix, beat, step_size):
     #if len(matrix_timestamps) <= len(beat):
     #    return matrix
 
-    beat_support_1 = np.insert(beat, 0, 0).reshape(len(beat)+1,1)
-    beat_support_2 = np.insert(beat, len(beat), 0).reshape(len(beat)+1,1)
-    #beat_interval = np.subtract(beat_support_2, beat_support_1)
-    #samples_per_beat = np.array(beat_interval / step_size)
-    prev_beat = 0
-    beat_interval= []
-    [beat_interval.append(beat_support_2[i] - beat_support_1[i]) for i in range(0, len(beat))]
+    beat_support_1 = np.insert(beat, 0, 0)
+    beat_support_2 = np.insert(beat, len(beat), beat[len(beat)-1])
+    beat_interval = np.subtract(beat_support_2, beat_support_1)
+    beat_interval = np.delete(beat_interval, beat_interval[-1])
+    samples_per_beat = np.array(beat_interval / step_size)
 
-    return beat_interval
+    return samples_per_beat
 
-    #CRASHA e non ho idea del perchè
-    
+
 
     # int = np.empty([])
     #
