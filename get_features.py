@@ -46,5 +46,7 @@ def get_label (data , rate):
 if __name__=='__main__':
     path = "test.mp3"
     data, rate = librosa.load(path)
-    [step, chroma] = get_chromagram(data,rate)
-    print(chroma)
+    #[step, chroma] = get_chromagram(data, rate)
+    #print(chroma)
+    beat = get_beat(data,rate)
+    print(beat)
