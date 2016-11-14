@@ -1,6 +1,6 @@
 import vamp
 import numpy as np
-import librosa
+#import librosa
 
 
 def get_chromagram(data, rate):
@@ -12,7 +12,7 @@ def get_chromagram(data, rate):
     matrix = dictionary['matrix']
     step = float(matrix[0])
     chromagram = np.array(matrix[1]).transpose()
-    return [step, chromagram]
+    return(step, chromagram)
 
 
 def get_bass_chromagram(data, rate):
@@ -20,33 +20,39 @@ def get_bass_chromagram(data, rate):
     matrix = dictionary['matrix']
     step = float(matrix[0])
     basschromagram = np.array(matrix[1]).transpose()
-    return [step, basschromagram]
+    return(step, basschromagram)
 
 
 def get_beat(data, rate):
-    beat = vamp.collect(data, rate, "qm-vamp-plugins:qm-barbeattracker")
+    beat = vamp.collect(data, rate, "qm-vamp-plugins:qm-barbeattracker", output='beats')
     list = beat['list']
     timestamp = []
     for elem in list:
         timestamp.append(float(elem['timestamp']))
 
     timestamp = np.array(timestamp)
-    return timestamp
+    return(timestamp)
 
 
-def get_label (data , rate):
-    beat = vamp.collect(data,rate,"qm-vamp-plugins:qm-barbeattracker")
+def get_label(data , rate):
+    beat = vamp.collect(data,rate,"qm-vamp-plugins:qm-barbeattracker", output='beats')
     list = beat['list']
     label = []
     for elem in list:
         label.append(elem['label'])
     label = np.array(label)
-    return label
+    return(label)
 
-if __name__=='__main__':
-    path = "test.mp3"
-    data, rate = librosa.load(path)
-    #[step, chroma] = get_chromagram(data, rate)
-    #print(chroma)
-    beat = get_beat(data,rate)
-    print(beat)
+def pitch_salience(data,rate):
+    pitch_salience = vamp.collect(data, rate, "libvamp_essentia:essentia_PitchSalience")
+    vector = np.array(pitch_salience['vector'])
+    output = vector[1]
+    return(output)
+
+# if __name__=='__main__':
+#     path = "test.mp3"
+#     data, rate = librosa.load(path)
+#     #[step, chroma] = get_chromagram(data, rate)
+#     #print(chroma)
+#     beat = get_beat(data,rate)
+#     print(beat)

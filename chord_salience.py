@@ -1,6 +1,4 @@
 import numpy as np
-import vamp
-import librosa
 import get_features
 
 
@@ -49,11 +47,11 @@ def get_chord_salience(data, rate):
     return [step, chord_salience]
 
 
-if __name__=="__main__":
-    path = "test.mp3"
-    data, rate = librosa.load(path)
-    chord_salience = get_chord_salience(data, rate)
-    print(chord_salience)
+# if __name__=="__main__":
+#     path = "test.mp3"
+#     data, rate = librosa.load(path)
+#     chord_salience = get_chord_salience(data, rate)
+#     print(chord_salience)
 
 
 

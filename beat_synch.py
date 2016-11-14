@@ -1,4 +1,4 @@
-import librosa
+#import librosa
 import numpy as np
 import get_features
 import chord_salience
@@ -27,10 +27,10 @@ def beat_synch(matrix, beat, step_size):
 
 
 
-if __name__=='__main__':
-    path = "testcorto.wav"
-    data, rate = librosa.load(path)
-    beat_timestamp = get_features.get_beat(data, rate)
-    [step, chord_salience] = chord_salience.get_chord_salience(data, rate)
-    synch_chord_salience = beat_synch(chord_salience, beat_timestamp, step)
-    print(synch_chord_salience)
+# if __name__=='__main__':
+#     path = "testcorto.wav"
+#     data, rate = librosa.load(path)
+#     beat_timestamp = get_features.get_beat(data, rate)
+#     [step, chord_salience] = chord_salience.get_chord_salience(data, rate)
+#     synch_chord_salience = beat_synch(chord_salience, beat_timestamp, step)
+#     print(synch_chord_salience)
