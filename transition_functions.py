@@ -2,8 +2,8 @@ import numpy as np
 import librosa
 import get_features
 
-n_key_modes = 4         #maj mixolidian dorian minor
-n_chord_types = 2  #maj min
+n_key_modes = 4         # maj mixolidian dorian minor
+n_chord_types = 2       # maj min
 n_root = 12
 n_keys = n_key_modes * n_root
 n_chords = n_chord_types * n_root
@@ -15,7 +15,7 @@ dor_key_index = 2
 min_key_index = 3
 
 
-def prevkey_to_nextkey(treble_chromagram):
+def Prevkey_To_Nextkey(treble_chromagram):
     # da chordRecognition/ChordDetection/KeyTransModel.m
     # da 4.2.5 Key Node
 
@@ -60,7 +60,7 @@ def prevkey_to_nextkey(treble_chromagram):
     return key_to_key_prob_normalized
 
 
-def key_to_chord():
+def Key_To_Chord():
     # da ChordRecognition/chordDetection/ChordGivenKeyModel.m
     # da 4.2.6 Chord Node
 
@@ -122,17 +122,26 @@ def key_to_chord():
     no_chord_column = no_chord_prob * np.ones((n_keys, 1))
     key_to_chord_prob = np.append(arr=key_to_chord_prob, values=no_chord_column, axis=1)
 
-    # MANCA LEVARE GLI ELEMENTI DIVERSI DA 0
+    # substitute alle elements = 0 with epsilon
+    sel = (key_to_chord_prob == 0)
+    key_to_chord_prob[sel] = epsilon
 
     key_to_chord_prob_normalized = np.zeros(shape=(n_key_modes * n_root, n_chord_types * n_root +1))
 
     for i in range(0, n_chord_types * n_root + 1):
         key_to_chord_prob_normalized[i, :] = key_to_chord_prob[i, :] / np.sum(key_to_chord_prob[i, :])
+
+    # in Matlab è previsto che possa essere operata una least square regression ma i parametri non la prevedono
+
     print('tuma')
     return
 
 
-
+def Prevchord_Nextchord_To_Bass():
+    n_chords_no = n_chords + 1
+    no_chord_index = end(n_chords_no)
+    bass_root = n_root
+    chord_template = Chord_Template()
 
 if __name__=='__main__':
     # path = "testcorto.wav"

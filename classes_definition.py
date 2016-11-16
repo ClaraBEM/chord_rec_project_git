@@ -1,6 +1,6 @@
 import beat_synch
 import get_features
-import chord_salience
+
 
 class KeyNode:
     def __init__(self, root, mode):
@@ -20,18 +20,18 @@ class ChordNode:
 
 class BeatLabelNode:
     def __init__(self, data, rate):
-        BeatLabelNode.label = get_features.get_label(data, rate)
-        BeatLabelNode.beat = get_features.get_beat(data, rate)
+        BeatLabelNode.label = get_features.Get_Label(data, rate)
+        BeatLabelNode.beat = get_features.Get_Beat(data, rate)
 
 
 class BassChromagramNode:
     def __init__(self, data, rate, beat):
-        BassChromagramNode.step, bass_chromagram = get_features.get_bass_chromagram(data, rate)
-        BassChromagramNode.synch_bass_chromagram = beat_synch.beat_synch(bass_chromagram, beat, BassChromagramNode.step)
+        BassChromagramNode.step, bass_chromagram = get_features.Get_Bass_Chromagram(data, rate)
+        BassChromagramNode.synch_bass_chromagram = beat_synch.Beat_Synchronization(bass_chromagram, beat, BassChromagramNode.step)
 
 
 class ChordSalienceNode:
     def __init__(self,data,rate,beat):
-        ChordSalienceNode.step, chord_salience_matrix = chord_salience.get_chord_salience(data, rate)
+        ChordSalienceNode.step, chord_salience_matrix = get_features.Get_Chord_Salience(data, rate)
         ChordSalienceNode.synch_chord_salience = beat_synch.beat_synch(chord_salience_matrix, beat, ChordSalienceNode.step)
 

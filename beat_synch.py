@@ -1,10 +1,8 @@
 #import librosa
 import numpy as np
-import get_features
-import chord_salience
 
 
-def beat_synch(matrix, beat, step_size):
+def Beat_Synchronization(matrix, beat, step_size):
 
     [row, col] = np.shape(matrix)
     matrix_timestamps = np.arange(0, col)*step_size
@@ -20,7 +18,6 @@ def beat_synch(matrix, beat, step_size):
     linfinite_norm = np.linalg.norm(synchronized_matrix.astype(float), ord=np.inf)         # to compute norm I need float
     normalized_synch_matrix = synchronized_matrix/(linfinite_norm)
 
-
     return normalized_synch_matrix
 
 
@@ -31,6 +28,5 @@ def beat_synch(matrix, beat, step_size):
 #     path = "testcorto.wav"
 #     data, rate = librosa.load(path)
 #     beat_timestamp = get_features.get_beat(data, rate)
-#     [step, chord_salience] = chord_salience.get_chord_salience(data, rate)
-#     synch_chord_salience = beat_synch(chord_salience, beat_timestamp, step)
-#     print(synch_chord_salience)
+#
+#
