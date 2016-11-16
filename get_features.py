@@ -66,7 +66,8 @@ def Get_Binary_Model():
     return chord_binary_model
 
 
-def Get_Chord_Salience(data, rate):
+# controlla se conviene mandare in input chromgram direttamente
+def Get_Chord_Salience(step, rate):
     [step, chromagram] = Get_Chromagram(data, rate)
     eps = 2.2204e-16
 
