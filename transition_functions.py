@@ -307,6 +307,43 @@ def Mode_To_Prevchord_Nextchord():
     return mode_to_chord_change
 
 
+def Labels_To_Prevchord_Nextchord():
+
+    a = np.empty((12, 12))
+    a[:] = np.NAN
+    a[1, 0] = 0.684189684719655
+    a[1, 1] = 0.158682988716859
+    a[2, 0] = 0.551905308091156
+    a[2, 1] = 0
+    a[2, 2] = 0.0327184489628603
+    a[3, 0] = 0.741551387544580
+    a[3, 1] = 0.0223820305492633
+    a[3, 2] = 0.216058967539676
+    a[3, 3] = 0.0433649453617753
+
+    for i in range(0, 12):
+        a[11, i] = 0
+
+    a[11, 0] = 0.854166666666667
+    a[11, 3] = 0.0208333333333333
+    a[11, 6] = 0.375000000000000
+    return a
+
+
+def Bass_To_Bass_Chromagram():
+
+    Bsize = 12
+    BasCsize = 13
+    notes = np.identity(12)
+    mu = np.zeros((BasCsize, Bsize))
+    sigma = np.zeros((BasCsize, BasCsize, Bsize))
+
+    for bassInd in range(0, Bsize):
+        a = np.transpose(notes[bassInd, :])
+        mu[:, bassInd] = np.append(a, 0)
+        sigma[:, :, bassInd] = 0.1 * np.identity(BasCsize)
+    return mu, sigma
+
 
 if __name__=='__main__':
     # path = "testcorto.wav"
@@ -316,4 +353,3 @@ if __name__=='__main__':
     # trans_prob = key_to_key(chroma)
     #print(trans_prob)
     print (Chord_To_Treble_Chromagram())
-
