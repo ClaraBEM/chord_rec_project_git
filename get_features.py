@@ -50,7 +50,7 @@ def Get_Pitch_Salience(data,rate):
     output = vector[1]
     return output
 
-def Get_Binary_Model():
+def Get_Chord_Binary_Model():
     N_chord = 24
     N_pitch = 12
     chord_binary_model = np.zeros(shape=(N_pitch, N_chord))
@@ -66,12 +66,31 @@ def Get_Binary_Model():
     return chord_binary_model
 
 
+def Get_Key_Binary_Model():
+    maj_key_template = [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1]
+    mix_key_template = [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0]
+    min_key_template = [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0]
+    dor_key_template = [1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0]
+    maj_keys = np.zeros(12, 12)
+    mix_keys = np.zeros(12, 12)
+    min_keys = np.zeros(12, 12)
+    dor_keys = np.zeros
+    for i in range(1, 12):
+        maj_keys[i, :] = np.roll(maj_key_template, i)
+        mix_keys[i, :] = np.roll(mix_key_template, i)
+
+
+
+
+
+
+
 # controlla se conviene mandare in input chromgram direttamente
 def Get_Chord_Salience(step, rate):
     [step, chromagram] = Get_Chromagram(data, rate)
     eps = 2.2204e-16
 
-    chord_template = Get_Binary_Model()
+    chord_template = Get_Chord_Binary_Model()
     distance_matrix = np.zeros(chromagram.shape)
     chord_salience = np.zeros(chromagram.shape)
     row = chromagram.shape[0]
@@ -95,6 +114,8 @@ def Get_Chord_Salience(step, rate):
         # MANCA MEDIAN FILTER
         # return chord_salience
     return [step, chord_salience]
+
+
 
 # if __name__=='__main__':
 #     path = "test.mp3"

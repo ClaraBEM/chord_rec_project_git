@@ -145,7 +145,7 @@ def Prevchord_Nextchord_To_Bass():
     n_chords_and_no_chord = n_chords + 1
     no_chord_col = np.ones((n_roots, 1))
     bass_roots = n_roots
-    chord_template = get_features.Get_Binary_Model()
+    chord_template = get_features.Get_Chord_Binary_Model()
     chord_template = np.append(arr=chord_template, values=no_chord_col, axis=1)
     bass_prob = np.array([0.8, 0.2])
 
@@ -193,6 +193,16 @@ def Chord_To_Treble_Chromagram():
 
     #non capisco quale dipendenza sto modellando
     return
+
+
+def Mode_To_Prevchord_Nextchord():
+
+
+    n_chords_and_no_chord = n_chords + 1
+    no_chord_col = np.ones((n_roots, 1))
+    chord_template = get_features.Get_Binary_Model()
+    chord_template = np.append(arr=chord_template, values=no_chord_col, axis=1)
+
 
 
 if __name__=='__main__':
