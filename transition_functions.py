@@ -2,6 +2,9 @@ import numpy as np
 import librosa
 import get_features
 
+
+# CONVENZIONE : nelle matrici di transizione / matrici di sigma, l'ultima dimensione è l'ouput, la prima / le prime sono gli input
+
 n_key_modes = 4         # maj mixolidian dorian minor
 n_chord_types = 2       # maj min
 n_roots = 12
@@ -134,7 +137,6 @@ def Key_To_Chord():
 
     # in Matlab è previsto che possa essere operata una least square regression ma i parametri non la prevedono
 
-    print('tuma')
     return key_to_chord_prob
 
 
@@ -184,23 +186,62 @@ def Prevchord_Nextchord_To_Bass():
 def Chord_To_Treble_Chromagram():
     # from chordRecognition/chordDetection/TrebleChromaGivenChordModel
     # without key dipendence
-    # params
-    maj_pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-    is_in_key = np.array(shape=(n_keys, n_roots), dtype=bool)
-    for mode in range(0, n_keys):
-        for key_root in range(0, n_root):
-            is_in_key[mode * n_roots + key_root, :]
+    # this dependence will produce the one between chord salience and chord
+    # I'm going to compute the parameters for a gaussian distribution
+    # in this implementation defaul sigma and chord sigma are both = 0.2 (therefore it's not useful), still
+    # it's possible to change manually the parameters
 
-    #non capisco quale dipendenza sto modellando
-    return
+    # params
+    treb_chrom_size = n_roots
+    n_chords_and_no_chord = n_chords + 1
+    key_is_maj = np.ones((1, 12))
+    key_is_maj = np.append(arr=key_is_maj, values=np.zeros((1, n_keys - 12)))
+    key_is_mix = np.roll(key_is_maj, 12)
+    key_is_dor = np.roll(key_is_mix, 12)
+    key_is_min = np.roll(key_is_dor, 12)
+
+    chord_is_maj = np.ones((1,12))
+    chord_is_maj = np.append(arr=chord_is_maj, values=np.zeros((1, n_chords - 12)))
+    chord_is_min = np.roll(chord_is_maj, 12)
+
+    chord_sigmas = [0.2, 0.2, 0.2]
+    default_sigma = 0.2
+
+    chord_template = np.transpose(get_features.Get_Chord_Binary_Model())     # for simplicity I tranpose the matrix
+
+    mu = np.zeros((n_chords + 1, treb_chrom_size))
+    sigma = np.zeros((n_chords + 1, treb_chrom_size, treb_chrom_size))
+
+    for chord_ind in range(0, n_chords):
+        mu[chord_ind, :] = chord_template[chord_ind, :]
+        diag = default_sigma * np.ones((1, 12))
+
+        if chord_is_maj[chord_ind]:
+            chord_tones_sel = np.array([0, 4, 7])        # accordo maggiore
+        else:
+            if chord_is_min[chord_ind]:
+                chord_tones_sel = np.array([0, 3, 7])    # accordi minore
+
+        sel = np.zeros((1, 12), dtype=bool)
+        sel[:,(chord_ind + chord_tones_sel) % 12] = True
+
+        diag[sel] = chord_sigmas
+        sigma[chord_ind, : , :] = np.diag(diag)
+
+
+    # add the no_chord row
+    mu[n_chords_and_no_chord - 1, :] = np.ones(treb_chrom_size)
+    sigma[n_chords_and_no_chord - 1, :, :] = np.identity(treb_chrom_size)
+
+    return mu, sigma
 
 
 def Mode_To_Prevchord_Nextchord():
-    #
+    # from chordRecognition/ ChordDetection/ chordChangeGivenModeBak
+
 
     k1 = 10
     k2 = 15
-    base = 1
     n_chords_and_no_chord = n_chords + 1
     no_chord_col = np.ones((n_roots, 1))
     chord_template = get_features.Get_Binary_Model()
@@ -267,12 +308,12 @@ def Mode_To_Prevchord_Nextchord():
 
 
 
-    if __name__=='__main__':
+if __name__=='__main__':
     # path = "testcorto.wav"
     # data, rate = librosa.load(path)
     # [step, chroma] = get_features.get_chromagram(data, rate)
     #
     # trans_prob = key_to_key(chroma)
     #print(trans_prob)
+    print (Chord_To_Treble_Chromagram())
 
-    Prevchord_Nextchord_To_Bass()
