@@ -29,7 +29,6 @@ def Get_Beat(data, rate):
     timestamp = []
     for elem in list:
         timestamp.append(float(elem['timestamp']))
-
     timestamp = np.array(timestamp)
     return timestamp
 
@@ -50,6 +49,7 @@ def Get_Pitch_Salience(data,rate):
     output = vector[1]
     return output
 
+
 def Get_Chord_Binary_Model():
     N_chord = 24
     N_pitch = 12
@@ -67,26 +67,29 @@ def Get_Chord_Binary_Model():
 
 
 def Get_Key_Binary_Model():
+    # build the model for the keys
+    # output is 48x12 matrix, each line represents the presence/no presence of the grade for the scale
+    # maj mix dor min is the mode order
+
     maj_key_template = [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1]
     mix_key_template = [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0]
     min_key_template = [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0]
     dor_key_template = [1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0]
-    maj_keys = np.zeros(12, 12)
-    mix_keys = np.zeros(12, 12)
-    min_keys = np.zeros(12, 12)
-    dor_keys = np.zeros
-    for i in range(1, 12):
+    maj_keys = np.zeros((12, 12))
+    mix_keys = np.zeros((12, 12))
+    min_keys = np.zeros((12, 12))
+    dor_keys = np.zeros((12, 12))
+    for i in range(0, 12):
         maj_keys[i, :] = np.roll(maj_key_template, i)
         mix_keys[i, :] = np.roll(mix_key_template, i)
-
-
-
-
-
+        min_keys[i, :] = np.roll(min_key_template, i)
+        dor_keys[i, :] = np.roll(dor_key_template, i)
+    key_template = np.concatenate((maj_keys, mix_keys, dor_keys, min_keys), axis=0)
+    return key_template
 
 
 # controlla se conviene mandare in input chromgram direttamente
-def Get_Chord_Salience(step, rate):
+def Get_Chord_Salience(data, rate):
     [step, chromagram] = Get_Chromagram(data, rate)
     eps = 2.2204e-16
 
@@ -111,13 +114,16 @@ def Get_Chord_Salience(step, rate):
                 sum = sum + chord_template_elem * np.log10(chord_template_elem / chromagram_elem) + chromagram_elem - chord_template_elem
             distance_matrix[k, t] = sum
         chord_salience[:, t] = min(distance_matrix[:, t]) / distance_matrix[:, t]
+
         # MANCA MEDIAN FILTER
         # return chord_salience
     return [step, chord_salience]
 
 
 
-# if __name__=='__main__':
+if __name__=='__main__':
+    print(Get_Key_Binary_Model())
+
 #     path = "test.mp3"
 #     data, rate = librosa.load(path)
 #     #[step, chroma] = get_chromagram(data, rate)

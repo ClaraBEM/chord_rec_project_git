@@ -15,7 +15,7 @@ dor_key_index = 2
 min_key_index = 3
 
 
-def Prevkey_To_Nextkey(treble_chromagram):
+def Prevkey_To_Nextkey():
     # da chordRecognition/ChordDetection/KeyTransModel.m
     # da 4.2.5 Key Node
 
@@ -196,16 +196,78 @@ def Chord_To_Treble_Chromagram():
 
 
 def Mode_To_Prevchord_Nextchord():
+    #
 
-
+    k1 = 10
+    k2 = 15
+    base = 1
     n_chords_and_no_chord = n_chords + 1
     no_chord_col = np.ones((n_roots, 1))
     chord_template = get_features.Get_Binary_Model()
     chord_template = np.append(arr=chord_template, values=no_chord_col, axis=1)
+    key_template = get_features.Get_Key_Binary_Model()
+    mode_to_chord_change = np.zeros((n_key_modes, n_chords_and_no_chord, n_chords_and_no_chord))
+
+    # assign lower weight to transition from tonic, higher weight for transition toward tonic
+    # lower weight for transition without tonic
+
+    # major key
+
+    mode_to_chord_change[maj_key_index, 0, 5] = k1              # C -> F
+    mode_to_chord_change[maj_key_index, 0, 7] = k1              # C -> G
+    mode_to_chord_change[maj_key_index, 7, 0] = k2              # F -> C
+    mode_to_chord_change[maj_key_index, 5, 0] = k2              # G -> C
+
+    mode_to_chord_change[maj_key_index, 5, 7] = k1              # F -> C
+    mode_to_chord_change[maj_key_index, 7, 5] = k1              # C -> F
+
+    mode_to_chord_change[maj_key_index, 3 + 12 - 1, 7] = k1     # Dmin ( 12 octave + 3 second -1) -> G
+    mode_to_chord_change[maj_key_index, 10 + 12 - 1 , 0] = k2   # Am -> C
+
+    # mixolidian key
+
+    mode_to_chord_change[mix_key_index, 0, 5] = k1              # C -> F
+    mode_to_chord_change[mix_key_index, 0, 10] = k1             # C -> Bb
+    mode_to_chord_change[mix_key_index, 5, 0] = k2              # F -> C
+    mode_to_chord_change[mix_key_index, 10, 0] = k2             # Bb -> C
+
+    mode_to_chord_change[mix_key_index, 10, 5] = k1             # Bb -> F
+    mode_to_chord_change[mix_key_index, 5, 10] = k1             # F -> Bb
+    mode_to_chord_change[maj_key_index, 0, 8 + 12 - 1] = k2     # C -> Gm
+    mode_to_chord_change[maj_key_index, 8 + 12 - 1, 0] = k2     # Gm -> C
+
+
+    #dorian key
+
+    mode_to_chord_change[dor_key_index, 1 + 12 - 1, 5] = k1     # Cm -> F
+    mode_to_chord_change[dor_key_index, 1 + 12 - 1, 3] = k1     # Cm -> Eb
+
+    mode_to_chord_change[dor_key_index, 5, 1 + 12 - 1] = k2     # F -> Cm
+    mode_to_chord_change[dor_key_index, 3, 1 + 12 - 1] = k2     # Eb -> Cm
+
+    mode_to_chord_change[dor_key_index, 3, 5] = k1              # Eb -> F
+    mode_to_chord_change[dor_key_index, 5, 3] = k1              # F -> Eb
+
+    mode_to_chord_change[dor_key_index, 5, 10] = k1             # F -> Bb
+    mode_to_chord_change[dor_key_index, 10, 5] = k1             # Bb -> F
+
+    #minor key
+
+    mode_to_chord_change[min_key_index, 1 + 12 - 1, 8] = k1     # Cm -> Ab
+    mode_to_chord_change[min_key_index, 1 + 12 - 1, 10] = k1    # Cm -> Bb
+    mode_to_chord_change[min_key_index, 8, 1 + 12 - 1] = k2     # Ab -> Cm
+    mode_to_chord_change[min_key_index, 1 + 12 - 1, 10] = k2    # Bb -> Cm
+
+    mode_to_chord_change[min_key_index, 8, 10] = k1             # Ab -> Bb
+    mode_to_chord_change[min_key_index, 10, 8] = k1             # Bb -> Ab
+    mode_to_chord_change[min_key_index, 6, 1 + 12 -1] = k2      # G -> Cm
+    mode_to_chord_change[min_key_index, 1 + 12 - 1, 6] = k1     # Cm -> G
+
+    return mode_to_chord_change
 
 
 
-if __name__=='__main__':
+    if __name__=='__main__':
     # path = "testcorto.wav"
     # data, rate = librosa.load(path)
     # [step, chroma] = get_features.get_chromagram(data, rate)
