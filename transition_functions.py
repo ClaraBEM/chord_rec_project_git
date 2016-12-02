@@ -244,7 +244,7 @@ def Mode_To_Prevchord_Nextchord():
     k2 = 15
     n_chords_and_no_chord = n_chords + 1
     no_chord_col = np.ones((n_roots, 1))
-    chord_template = get_features.Get_Binary_Model()
+    chord_template = get_features.Get_Chord_Binary_Model()
     chord_template = np.append(arr=chord_template, values=no_chord_col, axis=1)
     key_template = get_features.Get_Key_Binary_Model()
     mode_to_chord_change = np.zeros((n_key_modes, n_chords_and_no_chord, n_chords_and_no_chord))

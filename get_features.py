@@ -88,7 +88,7 @@ def Get_Key_Binary_Model():
     return key_template
 
 
-# controlla se conviene mandare in input chromgram direttamente
+# CONTROLLLAAAAAAAAAAAAA se conviene mandare in input chromgram direttamente
 def Get_Chord_Salience(data, rate):
     [step, chromagram] = Get_Chromagram(data, rate)
     eps = 2.2204e-16

@@ -29,6 +29,12 @@ class BassChromagramNode:
         BassChromagramNode.step, bass_chromagram = get_features.Get_Bass_Chromagram(data, rate)
         BassChromagramNode.synch_bass_chromagram = beat_synch.Beat_Synchronization(bass_chromagram, beat, BassChromagramNode.step)
 
+class ChromagramNode:
+    def __init__(selfs, data, rate, beat):
+        ChromagramNode.step, chomagram = get_features.Get_Chromagram(data, rate)
+        ChromagramNode.synch_chromagram = beat_synch.Beat_Synchronization(chomagram, beat, ChromagramNode.step)
+
+
 
 class ChordSalienceNode:
     def __init__(self,data,rate,beat):
