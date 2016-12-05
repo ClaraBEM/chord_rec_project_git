@@ -1,7 +1,8 @@
 from jpype import *
 
 max_label = 4
-key_probability = []
+key_prior_prob = []
+label_prior_prob = [0.25, 0.25, 0.25, 0.25]
 
 
 
@@ -23,8 +24,20 @@ for i in range(1, max_label +1):
     label = str(i)
     beat_states.append(bayesServer.State(label))
 
-label_node = bayesServer.Node('label', beat_states)
+#label_node = bayesServer.Node('label', beat_states)
 label_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
+
+#invece di costruire gli stati ---> nodo faremo  stati ---> variabile --->nodo
+
+label_variable = bayesServer.Variable('label', beat_states)
+print(label_variable.getStates())
+label_node = bayesServer.Node('label_node', [label_variable])
+label_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
+
+#in questo modo dentro la varabile casuale conserva gli stati del nodo
+
+
+
 
 # Create Key Node
 
@@ -102,6 +115,13 @@ network.getLinks().add(bayesServer.Link(chord_node, salience_node))
 network.getLinks().add(bayesServer.Link(key_node, key_node, 1))
 network.getLinks().add(bayesServer.Link(chord_node, chord_node, 1))
 network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
+
+# Set the distributions among the nodes
+
+# start from time 0
+
+# Labels node
+
 
 
 

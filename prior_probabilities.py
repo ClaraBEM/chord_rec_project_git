@@ -9,7 +9,7 @@ pitch_profile = [0.2093, 0.0299, 0.0867, 0.0806, 0.0673, 0.0933, 0.0379, 0.1708,
 
 # we are going to use wide chromagram instead treble chromagram for simplicity of implementation
 
-def key_probability( synchronized_chromagram):
+def key_prior_probability(synchronized_chromagram):
     [pitch_num, frames_num] = synchronized_chromagram.shape
 
     root_feature = np.zeros([pitch_num, frames_num])
@@ -30,15 +30,22 @@ def key_probability( synchronized_chromagram):
     return key_prob
 
 
+def label_prior_probability(labels_number):
+    label_prior_prob = np.full(shape=[labels_number,1],fill_value=1/labels_number)
+    return label_prior_prob
+
 
 if __name__=='__main__':
-    path = "testcorto.wav"
-    data, rate = librosa.load(path)
-    beat = get_features.Get_Beat(data, rate)
-    [step, chroma] = get_features.Get_Chromagram(data, rate)
-    beat_chroma = beat_synch.Beat_Synchronization(chroma, beat, step)
+    # path = "testcorto.wav"
+    # data, rate = librosa.load(path)
+    # beat = get_features.Get_Beat(data, rate)
+    # [step, chroma] = get_features.Get_Chromagram(data, rate)
+    # beat_chroma = beat_synch.Beat_Synchronization(chroma, beat, step)
+    #
+    # prob = key_probability(beat_chroma)
+    # print(prob)
 
-    prob = key_probability(beat_chroma)
+    prob = label_prior_probability(4)
     print(prob)
 
 
