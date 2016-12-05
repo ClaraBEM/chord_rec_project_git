@@ -2,9 +2,6 @@ from jpype import *
 
 max_label = 4
 key_prior_prob = []
-label_prior_prob = [0.25, 0.25, 0.25, 0.25]
-
-
 
 
 classpath = '/Users/Clara/Downloads/bayesserver-7.9/Java/bayesserver-7.9.jar'
@@ -15,6 +12,7 @@ bayesServer = JPackage("com.bayesserver")
 
 network = bayesServer.Network()
 
+# invece di costruire gli stati ---> nodo facciamo  stati ---> variabile casuale (discreta o continua)--->nodo
 
 # Create Label Node, depends on argument max_label
 
@@ -24,20 +22,14 @@ for i in range(1, max_label +1):
     label = str(i)
     beat_states.append(bayesServer.State(label))
 
-#label_node = bayesServer.Node('label', beat_states)
-label_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
-
-#invece di costruire gli stati ---> nodo faremo  stati ---> variabile --->nodo
+# con questo costruttore il tipo della variabile è discreto per default (sto dando in ingresso un numero finito di stati)
 
 label_variable = bayesServer.Variable('label', beat_states)
-print(label_variable.getStates())
-label_node = bayesServer.Node('label_node', [label_variable])
+
+label_node = bayesServer.Node('label', [label_variable])
 label_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
-#in questo modo dentro la varabile casuale conserva gli stati del nodo
-
-
-
+# in questo modo dentro la varabile casuale sono salvati gli stati del nodo
 
 # Create Key Node
 
@@ -50,9 +42,9 @@ key_states = []
 for i in range(1, 12*4):
     key_states.append(bayesServer.State(key_labels[i]))
 
-key_node = bayesServer.Node('key', key_states)
+key_variable = bayesServer.Variable('key', key_states)
+key_node = bayesServer.Node('key', [key_variable])
 key_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
-
 
 # Create Chord Node
 
@@ -63,7 +55,8 @@ chord_states = []
 for i in range(1, 12*2):
     chord_states.append(bayesServer.State(chord_labels[i]))
 
-chord_node = bayesServer.Node('chord', chord_states)
+chord_variable = bayesServer.Variable('chord', chord_states)
+chord_node = bayesServer.Node('chord', [chord_variable])
 chord_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 
@@ -75,21 +68,22 @@ bass_states = []
 for i in range(1, 12):
     bass_states.append(bayesServer.State(bass_labels[i]))
 
-bass_node = bayesServer.Node('bass', bass_states)
+bass_variable = bayesServer.Variable('bass', bass_states)
+bass_node = bayesServer.Node('bass', [bass_variable])
 bass_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 
 # Create Bass Chromagram Node
 
-basschroma_obs = bayesServer.Variable('bassobs', bayesServer.VariableValueType.CONTINUOUS)
-basschroma_node = bayesServer.Node('basschroma', [basschroma_obs])
+basschroma_variable = bayesServer.Variable('bassobs', bayesServer.VariableValueType.CONTINUOUS)
+basschroma_node = bayesServer.Node('basschroma', [basschroma_variable])
 basschroma_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 
 # Create Salience Node
 
-salience_obs = bayesServer.Variable('salienceobs', bayesServer.VariableValueType.CONTINUOUS)
-salience_node = bayesServer.Node('salience', [salience_obs])
+salience_variable = bayesServer.Variable('salienceobs', bayesServer.VariableValueType.CONTINUOUS)
+salience_node = bayesServer.Node('salience', [salience_variable])
 salience_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 # Add node to the network
@@ -118,9 +112,13 @@ network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
 
 # Set the distributions among the nodes
 
-# start from time 0
+# start from time 0 for nodes that have a temporal link of order 1
 
-# Labels node
+# Key node
+
+table = key_node.newDistribution(0).getTable()
+iterator = bayesServer.TableIterator(table, [key_node],[0]).CopyFrom(key_prior_prob)
+
 
 
 
