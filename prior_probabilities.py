@@ -38,17 +38,17 @@ def chord_prior_probability():
 
 
 if __name__=='__main__':
-    # path = "testcorto.wav"
-    # data, rate = librosa.load(path)
-    # beat = get_features.Get_Beat(data, rate)
-    # [step, chroma] = get_features.Get_Chromagram(data, rate)
-    # beat_chroma = beat_synch.Beat_Synchronization(chroma, beat, step)
-    #
+    path = "testcorto.wav"
+    data, rate = librosa.load(path)
+    beat = get_features.Get_Beat(data, rate)
+    [step, chroma] = get_features.Get_Chromagram(data, rate)
+    beat_chroma = beat_synch.Beat_Synchronization(chroma, beat, step)
+
+    print(key_prior_probability(beat_chroma))
     # prob = key_probability(beat_chroma)
     # print(prob)
 
-    prob = label_prior_probability(4)
-    print(prob)
+
 
 
 

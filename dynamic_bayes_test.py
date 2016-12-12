@@ -1,8 +1,22 @@
 from jpype import *
+import numpy as np
+import prior_probabilities
+import get_features
+import beat_synch
+import librosa
+
+key_prior_prob = np.array([ 0.02496951,  0.02973114,  0.01672377,  0.02044016,  0.01486557,  0.02229836,
+  0.01486557,  0.,  0.02229836,  0.02044016,  0.00743279,  0.02229836,  0.01114918,  0.00371639,  0.00743279,
+  0.01858196,  0.02044016,  0.01858196,
+  0.01672377,  0.01114918,  0.01672377,  0.01858196,  0.01736252,  0.01114918,
+  0.01718832,  0.,          0.01672377,  0.01022008,  0.01486557,  0.01114918,
+  0.00929098,  0.02229836,  0.01347192,  0.01858196,  0.01951106,  0.02229836,
+  0.01486557,  0.01858196,  0.01672377,  0.01858196,  0.01114918,  0.02229836,
+  0.01858196,  0.00743279,  0.02044016,  0.02229836,  0.00371639,  0.00743279,
+  0.01486557,  0.02601475,  0.02044016,  0.01765287,  0.02044016,  0.01858196,
+  0.02415655,  0.02787295,  0.02206608,  0.01486557,  0.02880204,  0.01858196], 'double')
 
 max_label = 4
-key_prior_prob = []
-
 
 classpath = '/Users/Clara/Downloads/bayesserver-7.9/Java/bayesserver-7.9.jar'
 
@@ -75,14 +89,14 @@ bass_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 # Create Bass Chromagram Node
 
-basschroma_variable = bayesServer.Variable('bassobs', bayesServer.VariableValueType.CONTINUOUS)
+basschroma_variable = bayesServer.Variable('bass', bayesServer.VariableValueType.CONTINUOUS)
 basschroma_node = bayesServer.Node('basschroma', [basschroma_variable])
 basschroma_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 
 # Create Salience Node
 
-salience_variable = bayesServer.Variable('salienceobs', bayesServer.VariableValueType.CONTINUOUS)
+salience_variable = bayesServer.Variable('salience', bayesServer.VariableValueType.CONTINUOUS)
 salience_node = bayesServer.Node('salience', [salience_variable])
 salience_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
@@ -117,8 +131,9 @@ network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
 # Key node
 
 table = key_node.newDistribution(0).getTable()
-iterator = bayesServer.TableIterator(table, [key_node],[0]).CopyFrom(key_prior_prob)
+print(key_node.getVariables())
 
+iterator = bayesServer.TableIterator(key_node.getVariables(), [0])
 
 
 
