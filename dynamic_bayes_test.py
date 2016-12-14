@@ -1,6 +1,6 @@
 from jpype import *
 import numpy as np
-import prior_probabilities
+import transition_functions
 import get_features
 import beat_synch
 import librosa
@@ -15,6 +15,13 @@ key_prior_prob = np.array([ 0.02496951,  0.02973114,  0.01672377,  0.02044016,  
   0.01858196,  0.00743279,  0.02044016,  0.02229836,  0.00371639,  0.00743279,
   0.01486557,  0.02601475,  0.02044016,  0.01765287,  0.02044016,  0.01858196,
   0.02415655,  0.02787295,  0.02206608,  0.01486557,  0.02880204,  0.01858196], 'double')
+
+key_to_chord = transition_functions.Key_To_Chord()
+bass_to_basschroma = transition_functions.Bass_To_Bass_Chromagram()
+
+
+
+label_to_chord = np.zeros([12,12])
 
 max_label = 4
 
@@ -41,7 +48,9 @@ for i in range(1, max_label +1):
 label_variable = bayesServer.Variable('label', beat_states)
 
 label_node = bayesServer.Node('label', [label_variable])
-label_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
+
+# PROVA
+# label_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 # in questo modo dentro la varabile casuale sono salvati gli stati del nodo
 
@@ -89,7 +98,7 @@ bass_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 # Create Bass Chromagram Node
 
-basschroma_variable = bayesServer.Variable('bass', bayesServer.VariableValueType.CONTINUOUS)
+basschroma_variable = bayesServer.Variable('basschroma', bayesServer.VariableValueType.CONTINUOUS)
 basschroma_node = bayesServer.Node('basschroma', [basschroma_variable])
 basschroma_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
@@ -120,25 +129,56 @@ network.getLinks().add(bayesServer.Link(chord_node, salience_node))
 
 # Create the links between two consecutive time slice
 
-network.getLinks().add(bayesServer.Link(key_node, key_node, 1))
-network.getLinks().add(bayesServer.Link(chord_node, chord_node, 1))
-network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
+# PROVA
+# network.getLinks().add(bayesServer.Link(key_node, key_node, 1))
+# network.getLinks().add(bayesServer.Link(chord_node, chord_node, 1))
+# network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
 
 # Set the distributions among the nodes
 
-# start from time 0 for nodes that have a temporal link of order 1
+#_____________________ PROVE PER I NODI CON LINK TEMPORALI________________________________
+# time 0 for nodes that have a temporal link of order 1
 
 # Key node
 
 table = key_node.newDistribution(0).getTable()
-print(key_node.getVariables())
 
-iterator = bayesServer.TableIterator(key_node.getVariables(), [0])
+#key_states_context = []
+#state_context = bayesServer.StateContext(key_states[0], 1)
+
+#for i in range(0, 48):
+#    key_states_context.append(bayesServer.StateContext(key_states[0], 0))
+
+#for item in key_states, i in range(0, 48):
+#    table.set(key_prior_prob[i], item)
+
+#
 
 
+#iterator = bayesServer.TableIterator(table, [key_node], [0])
+# ____________________________________________________________________________________________#
 
+# NB some relationships are between a node value and probability of transistion of another: in particular
+# label --> chord transition
+# chord transition --> bass
+# key(/mode) ---> chord transition
+# non so come fare a definirle!
 
+# distributions for the same time slice
 
+# Chord distribution
+
+table_chord = chord_node.newDistribution(0).getTable()
+iterator_chord = bayesServer.TableIterator(table_chord, [key_node, chord_node])
+iterator_chord.CopyFrom([key_to_chord])
+chord_node.setDistribution(table_chord)
+
+# Bass chromagram distribution
+
+table_bchroma = basschroma_node.newDistribution().getTable()
+iterator_bchroma = bayesServer.TableIterator(table, [bass_node, basschroma_node])
+iterator_bchroma.CopyFrom([bass_to_basschroma])
+basschroma_node.setDistribution(table_bchroma)
 
 
 
