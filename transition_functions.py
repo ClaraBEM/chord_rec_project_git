@@ -352,4 +352,4 @@ if __name__=='__main__':
     #
     # trans_prob = key_to_key(chroma)
     #print(trans_prob)
-    print (Chord_To_Treble_Chromagram())
+    np.savetxt("prob.txt", Prevkey_To_Nextkey())
