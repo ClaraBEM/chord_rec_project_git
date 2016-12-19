@@ -29,7 +29,7 @@ for i in range(0, (max_label * n_keys * n_chords)):
 # TRANSITION PROBABILITIES
 
 key_to_chord = transition_functions.Key_To_Chord()
-bass_to_basschroma = transition_functions.Bass_To_Bass_Chromagram()
+[bass_to_basschroma_mu, bass_to_basschroma_sigma] = transition_functions.Bass_To_Bass_Chromagram()
 key_to_key = transition_functions.Prevkey_To_Nextkey()
 
 # BAYES SERRVER LIBRARY SETUP
@@ -105,9 +105,16 @@ bass_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 
 # Create BASS CHROMAGRAM NODE
+# probabilmente devo definire una variabile continua per ogni colonna del cromagrammma
 
-basschroma_variable = bayesServer.Variable('basschroma', bayesServer.VariableValueType.CONTINUOUS)
-basschroma_node = bayesServer.Node('basschroma', [basschroma_variable])
+basschroma_rows = 12
+basschroma_labels = bass_labels
+basschroma_variables = []
+
+for i in range(0, basschroma_rows):
+    basschroma_variables.append(bayesServer.Variable(basschroma_labels[i], bayesServer.VariableValueType.CONTINUOUS))
+
+basschroma_node = bayesServer.Node('basschroma', basschroma_variables)
 basschroma_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 
@@ -172,27 +179,32 @@ chord_node.setDistribution(chord_table)
 
 # distributions for the same time slice
 
+# Basschroma node
+
+# basschroma_distr = basschroma_node.newDistribution()
+#
+# for state in bass_states, i in range(0, 12):
+#     j = 0
+#     for variable in basschroma_variables:
+#         basschroma_distr.setMean(variable, java.lang.Integer(0), bass_to_basschroma_mu[j, i], state)
+#         j += j
 
 
-# Bass chromagram node distribution
 
-#table_bchroma = basschroma_node.newDistribution().getTable()
-#iterator_bchroma = bayesServer.TableIterator(table_bchroma, [bass_node])
-# iterator_bchroma.CopyFrom([bass_to_basschroma])
-# basschroma_node.setDistribution(table_bchroma)
+
+
 
 #distributions whithin two time slices
+
 
 # Key node
 
 key_trans_table = key_node.newDistribution(1).getTable()
 key_trans_iterator = bayesServer.TableIterator(key_trans_table, [key_variable, key_variable], [java.lang.Integer(-1), java.lang.Integer(0)])
-
 # astype to cast to float, ravel to linearize the matrix
 key_trans_iterator.copyFrom(np.ravel(key_to_key.astype('float')))
-
-# NON FUNZIONA
-#key_node.setDistribution(key_trans_table)
+# in this case I have to use getDistribution to update the key distribution
+key_node.getDistributions().set(1, key_trans_table)
 
 
 
