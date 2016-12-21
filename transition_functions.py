@@ -333,15 +333,15 @@ def Labels_To_Prevchord_Nextchord():
 def Bass_To_Bass_Chromagram():
 
     Bsize = 12
-    BasCsize = 13
-    notes = np.identity(12)
-    mu = np.zeros((BasCsize, Bsize))
-    sigma = np.zeros((BasCsize, BasCsize, Bsize))
+    BasCsize = 12
+    notes = np.identity(Bsize)
+    mu = np.zeros((Bsize, BasCsize), dtype=float)
+    sigma = np.zeros((Bsize, BasCsize, BasCsize, ))
 
     for bassInd in range(0, Bsize):
         a = np.transpose(notes[bassInd, :])
-        mu[:, bassInd] = np.append(a, 0)
-        sigma[:, :, bassInd] = 0.1 * np.identity(BasCsize)
+        mu[bassInd, :] = np.array(a)
+        sigma[bassInd, :, :] = 0.1 * np.identity(BasCsize)
     return mu, sigma
 
 

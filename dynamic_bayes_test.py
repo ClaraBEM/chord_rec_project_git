@@ -12,6 +12,8 @@ n_roots = 12
 n_keys = n_key_modes * n_roots
 n_chords = n_chord_types * n_roots
 
+
+
 # PRIOR PROBABILITIES setup for network definition
 
 # prior key probabilities
@@ -19,18 +21,23 @@ n_chords = n_chord_types * n_roots
 prior_key = prior_probabilities.simple_prior_key_prob()
 
 # prior chord probabilities I replicate the array to fill each possible combination of the table chord|key label
-
-# potrei modificare la funzione perchè in questo caso ogni elemento è uguale,
 prior_chords = prior_probabilities.chord_prior_probability()
 
 for i in range(0, (max_label * n_keys * n_chords)):
     prior_chords = np.append(prior_chords, prior_chords[0])
 
+
+
 # TRANSITION PROBABILITIES
 
 key_to_chord = transition_functions.Key_To_Chord()
+label_to_chord = transition_functions.Labels_To_Prevchord_Nextchord()[max_label-1]
+
 [bass_to_basschroma_mu, bass_to_basschroma_sigma] = transition_functions.Bass_To_Bass_Chromagram()
 key_to_key = transition_functions.Prevkey_To_Nextkey()
+
+
+
 
 # BAYES SERRVER LIBRARY SETUP
 
@@ -70,7 +77,7 @@ key_labels = ['C:maj', 'Db:maj', 'D:maj', 'Eb:maj', 'E:maj', 'F:maj', 'F#:maj', 
              'C:min', 'C#:min', 'D:min', 'D#:min', 'E:min', 'F:min', 'F#:min', 'G:min', 'G#:min', 'A:min', 'B:min', 'Bb:min']
 
 key_states = []
-for i in range(0, 12*4):
+for i in range(0, n_keys):
     key_states.append(bayesServer.State(key_labels[i]))
 
 key_variable = bayesServer.Variable('key', key_states)
@@ -83,7 +90,7 @@ chord_labels = ['C:maj', 'Db:maj', 'D:maj','Eb:maj', 'E:maj','F:maj', 'F#:maj', 
                 'C:min', 'C#:min', 'D:min', 'D#:min', 'E:min', 'F:min', 'F#:min', 'G:min', 'G#:min', 'A:min', 'B:min', 'Bb:min']
 
 chord_states = []
-for i in range(0, 12*2):
+for i in range(0, n_chords):
     chord_states.append(bayesServer.State(chord_labels[i]))
 
 chord_variable = bayesServer.Variable('chord', chord_states)
@@ -96,7 +103,7 @@ chord_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 bass_labels = ['C', 'C#', 'D', 'D#', 'E', 'F', 'G', 'G#', 'A', 'A#','B', 'B#']
 
 bass_states = []
-for i in range(0, 12):
+for i in range(0, n_roots):
     bass_states.append(bayesServer.State(bass_labels[i]))
 
 bass_variable = bayesServer.Variable('bass', bass_states)
@@ -113,6 +120,7 @@ basschroma_variables = []
 
 for i in range(0, basschroma_rows):
     basschroma_variables.append(bayesServer.Variable(basschroma_labels[i], bayesServer.VariableValueType.CONTINUOUS))
+
 
 basschroma_node = bayesServer.Node('basschroma', basschroma_variables)
 basschroma_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
@@ -138,7 +146,7 @@ network.getNodes().add(salience_node)
 
 network.getLinks().add(bayesServer.Link(label_node, chord_node))
 network.getLinks().add(bayesServer.Link(key_node, chord_node))
-network.getLinks().add(bayesServer.Link(chord_node, bass_node))
+#network.getLinks().add(bayesServer.Link(chord_node, bass_node))
 
 network.getLinks().add(bayesServer.Link(bass_node, basschroma_node))
 network.getLinks().add(bayesServer.Link(chord_node, salience_node))
@@ -147,14 +155,14 @@ network.getLinks().add(bayesServer.Link(chord_node, salience_node))
 
 network.getLinks().add(bayesServer.Link(key_node, key_node, 1))
 network.getLinks().add(bayesServer.Link(chord_node, chord_node, 1))
-network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
+#network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
 
 #
 #
 # Set the distributions among the nodes
 
 
-# time 0 for nodes that have a temporal link of order 1
+# DISTRIBUTION AT TIME 0
 
 # Key node distribution
 
@@ -177,24 +185,34 @@ chord_node.setDistribution(chord_table)
 # key(/mode) ---> chord transition
 # non so come fare a definirle!
 
-# distributions for the same time slice
+
+# DISTIRIBUTIONS WITHIN SAME TIME SLICE
 
 # Basschroma node
 
-# basschroma_distr = basschroma_node.newDistribution()
-#
-# for state in bass_states, i in range(0, 12):
-#     j = 0
-#     for variable in basschroma_variables:
-#         basschroma_distr.setMean(variable, java.lang.Integer(0), bass_to_basschroma_mu[j, i], state)
-#         j += j
+#basschroma_distr = bayesServer.CLGaussian(basschroma_node, java.lang.Integer(0))
+basschroma_distr = bayesServer.CLGaussian(basschroma_node.newDistribution())
+bc = basschroma_variables[0]
+
+sc = basschroma_distr.getTable()
+sc_iterator = bayesServer.TableIterator(sc, [bass_variable], [java.lang.Integer(0)])
+
+for i in range(0, n_roots):
+    for j in range(0, basschroma_rows):
+        basschroma_distr.setMean(i, j, float(bass_to_basschroma_mu[i, j]))
+
+for i in range(0, n_roots):
+    for j in range(0, basschroma_rows):
+        for k in range(0, basschroma_rows):
+            basschroma_distr.setCovariance(i, j, k, float(bass_to_basschroma_sigma[i, j, k]))
 
 
 
+#basschroma_distr.setMean(bc, java.lang.Integer(0), float(0.1), sc_iterator)
 
 
 
-#distributions whithin two time slices
+# DISTRIBUTIONS WITHIN TWO TIME SLICES
 
 
 # Key node
@@ -206,6 +224,10 @@ key_trans_iterator.copyFrom(np.ravel(key_to_key.astype('float')))
 # in this case I have to use getDistribution to update the key distribution
 key_node.getDistributions().set(1, key_trans_table)
 
+# Chord node
+
+
+# Bass node
 
 
 print('tumaputtana')
