@@ -10,6 +10,7 @@ n_chord_types = 2       # maj min
 n_roots = 12
 n_keys = n_key_modes * n_roots
 n_chords = n_chord_types * n_roots
+n_chords_and_no_chord = n_chords + 1
 maj_chord_index = 0
 min_chord_index = 1
 maj_key_index = 0
@@ -144,7 +145,6 @@ def Prevchord_Nextchord_To_Bass():
     # da chordRecognition/chordDection/BassGivenChordChangeModel
 
     #params
-    n_chords_and_no_chord = n_chords + 1
     no_chord_col = np.ones((n_roots, 1))
     bass_roots = n_roots
     chord_template = get_features.Get_Chord_Binary_Model()
@@ -193,7 +193,6 @@ def Chord_To_Treble_Chromagram():
 
     # params
     treb_chrom_size = n_roots
-    n_chords_and_no_chord = n_chords + 1
     key_is_maj = np.ones((1, 12))
     key_is_maj = np.append(arr=key_is_maj, values=np.zeros((1, n_keys - 12)))
     key_is_mix = np.roll(key_is_maj, 12)
@@ -242,7 +241,6 @@ def Mode_To_Prevchord_Nextchord():
 
     k1 = 10
     k2 = 15
-    n_chords_and_no_chord = n_chords + 1
     no_chord_col = np.ones((n_roots, 1))
     chord_template = get_features.Get_Chord_Binary_Model()
     chord_template = np.append(arr=chord_template, values=no_chord_col, axis=1)
@@ -307,8 +305,41 @@ def Mode_To_Prevchord_Nextchord():
     return mode_to_chord_change
 
 
-def Labels_To_Prevchord_Nextchord():
+def Labels_To_Prevchord_NextchordMOD():
+    # dobbiao modificarla in modo che l'output sia una matrice di num_labels* chord * chord
+    # se il chord di partenza è uguale a quello di arrivo mettiamo la probabilità = 0?
+    #  quando moltiplico per la probabilità data dalla chiave se è uguale a 0 mi mette a 0 tutto
+    # se il chord di partenza è diverso da quello di arrivo avrà probabilità che cambia a seconda del label
+    a = np.empty((12, 12, n_chords_and_no_chord, n_chords_and_no_chord))
+    a[:] = np.NAN
+    a[1, 0, :, :] = 0.684189684719655
+    a[1, 1, :, :] = 0.158682988716859
 
+    a[2, 0, :, :] = 0.551905308091156
+    a[2, 1, :, :] = 0
+    a[2, 2, :, :] = 0.0327184489628603
+    a[3, 0, :, :] = 0.741551387544580
+    a[3, 1, :, :] = 0.0223820305492633
+    a[3, 2, :, :] = 0.216058967539676
+    a[3, 3, :, :] = 0.0433649453617753
+
+
+    a[11, :, :, :] = 0
+
+    a[11, 0, :, :] = 0.854166666666667
+    a[11, 3, :, :] = 0.0208333333333333
+    a[11, 6, :, :] = 0.375000000000000
+
+    for i in range(0, n_chords):
+        a[:, :, i, i] = 1
+    return a
+
+
+def Labels_To_Prevchord_Nextchord():
+    # dobbiao modificarla in modo che l'output sia una matrice di num_labels* chord * chord
+    # se il chord di partenza è uguale a quello di arrivo mettiamo la probabilità = 0?
+    #  quando moltiplico per la probabilità data dalla chiave se è uguale a 0 mi mette a 0 tutto
+    # se il chord di partenza è diverso da quello di arrivo avrà probabilità che cambia a seconda del label
     a = np.empty((12, 12))
     a[:] = np.NAN
     a[1, 0] = 0.684189684719655
@@ -321,15 +352,15 @@ def Labels_To_Prevchord_Nextchord():
     a[3, 2] = 0.216058967539676
     a[3, 3] = 0.0433649453617753
 
-    for i in range(0, 12):
-        a[11, i] = 0
+
+    a[11, :] = 0
 
     a[11, 0] = 0.854166666666667
     a[11, 3] = 0.0208333333333333
     a[11, 6] = 0.375000000000000
     return a
 
-
+# Da chiarire: perchè il bass chromagram ha 13 righe? (il treble chromagram ne ha 12)
 def Bass_To_Bass_Chromagram():
 
     Bsize = 12
@@ -352,4 +383,4 @@ if __name__=='__main__':
     #
     # trans_prob = key_to_key(chroma)
     #print(trans_prob)
-    np.savetxt("prob.txt", Prevkey_To_Nextkey())
+    print('ciao')

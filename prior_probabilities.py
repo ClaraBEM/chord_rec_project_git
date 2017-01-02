@@ -46,13 +46,13 @@ def key_prior_probability(synchronized_chromagram):
     # NON MI TORNANO LE DIMENSIONI DELLA KEY PROBABILITY per ora uso una a priori generica
 
 
-def simple_prior_key_prob():
+def Simple_Prior_Key_Prob():
     prob =  float(1/n_keys)
     key_prob = np.full([n_keys], prob)
     return key_prob
 
 
-def chord_prior_probability():
+def Chord_Prior_Probabilities():
     prob = float(1/n_chords)
     chord_prob = np.full([n_chords], prob)
     return chord_prob
