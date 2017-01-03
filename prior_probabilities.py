@@ -13,6 +13,7 @@ n_chord_types = 2       # maj min
 n_roots = 12
 n_keys = n_key_modes * n_roots
 n_chords = n_chord_types * n_roots
+n_chords_and_no_chord = n_chords + 1
 maj_chord_index = 0
 min_chord_index = 1
 maj_key_index = 0
@@ -52,9 +53,10 @@ def Simple_Prior_Key_Prob():
     return key_prob
 
 
-def Chord_Prior_Probabilities():
-    prob = float(1/n_chords)
-    chord_prob = np.full([n_chords], prob)
+def Prior_Chord_Prob():
+    prob = float(1/n_chords_and_no_chord)
+    # I include the elements for each combination of keys: I obtain the probability value for each key/chord combination
+    chord_prob = np.full([n_chords_and_no_chord*n_keys], prob)
     return chord_prob
 
 

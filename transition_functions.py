@@ -176,9 +176,10 @@ def Prevchord_Nextchord_To_Bass():
         chord_to_bass[prev_chord, n_chords_and_no_chord - 1, :] = np.ones((1, 1, bass_roots)) / bass_roots
 
     # normalization for statistic row vectors (CONTROLLA: NORMALIZZO L'ULTIMA DIMENSIONE cioè l'output (le righe nei casi precedenti)
+    chord_to_bass_prob = np.zeros([n_chords_and_no_chord, n_chords_and_no_chord, bass_roots])
     for prev_chord in range(0, n_chords_and_no_chord):
         for next_chord in range(0,n_chords_and_no_chord):
-            chord_to_bass_prob = chord_to_bass[prev_chord, this_chord, :] / sum(chord_to_bass[prev_chord, this_chord, :])
+            chord_to_bass_prob[prev_chord, next_chord, :] = chord_to_bass[prev_chord, this_chord, :] / sum(chord_to_bass[prev_chord, this_chord, :])
 
     return chord_to_bass_prob
 
@@ -383,4 +384,4 @@ if __name__=='__main__':
     #
     # trans_prob = key_to_key(chroma)
     #print(trans_prob)
-    print('ciao')
+    print(Prevchord_Nextchord_To_Bass())
