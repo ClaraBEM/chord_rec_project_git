@@ -53,13 +53,22 @@ def Simple_Prior_Key_Prob():
     return key_prob
 
 
-def Prior_Chord_Prob():
+def Prior_Chord_Prob(n_label):
     prob = float(1/n_chords_and_no_chord)
     # I include the elements for each combination of keys: I obtain the probability value for each key/chord combination
-    chord_prob = np.full([n_chords_and_no_chord*n_keys], prob)
+    chord_prob = np.full([n_label, n_keys, n_chords_and_no_chord], prob)
     return chord_prob
 
 
+def Prior_Label_Prob(n_labels):
+    prob = float(1/n_labels)
+    label_prob = np.full([n_labels], prob)
+    return label_prob
+
+def Prior_Bass_Prob():
+    prob = float(1/n_roots)
+    bass_prob = np.full([n_chords_and_no_chord, n_roots], prob)
+    return bass_prob
 
 
 if __name__=='__main__':

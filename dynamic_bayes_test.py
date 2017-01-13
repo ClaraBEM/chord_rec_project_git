@@ -21,7 +21,16 @@ n_chords_and_no_chord = n_chords + 1
 prior_key = prior_probabilities.Simple_Prior_Key_Prob()
 
 # prior chord probabilities
-prior_chords = prior_probabilities.Prior_Chord_Prob()
+prior_chords = prior_probabilities.Prior_Chord_Prob(max_label)
+
+# prior label prob
+
+prior_label = prior_probabilities.Prior_Label_Prob(max_label)
+
+# prior bass prob
+
+prior_bass = prior_probabilities.Prior_Bass_Prob()
+
 
 ##### PROVA CON NUOVA RETE (da includere in prior probabilities)
 #for i in range(0, (max_label * n_keys * n_chords)):
@@ -53,6 +62,7 @@ for l in range(0, max_label):
             tot_to_chord[l, k, c, :] = tot_to_chord[l, k, c, :] / sum(tot_to_chord[l, k, c, :])
 
 [bass_to_basschroma_mu, bass_to_basschroma_sigma] = transition_functions.Bass_To_Bass_Chromagram()
+[chord_to_chordsalience_mu, chord_to_chordsalience_sigma] = transition_functions.Chord_To_ChordSalience()
 
 key_to_key = transition_functions.Prevkey_To_Nextkey()
 
@@ -132,11 +142,13 @@ basschroma_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 # Create SALIENCE NODE
 
-# salience_variables = []
-#
-#     = bayesServer.Variable('salience', bayesServer.VariableValueType.CONTINUOUS)
-# salience_node = bayesServer.Node('salience', [salience_variable])
-# salience_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
+salience_rows = n_chords_and_no_chord
+salience_labels = chord_labels
+salience_variables = []
+for i in range(0, salience_rows):
+    salience_variables.append( bayesServer.Variable(salience_labels[i], bayesServer.VariableValueType.CONTINUOUS))
+salience_node = bayesServer.Node('salience', salience_variables)
+salience_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 # Add node to the network
 
@@ -145,19 +157,19 @@ network.getNodes().add(key_node)
 network.getNodes().add(chord_node)
 network.getNodes().add(bass_node)
 network.getNodes().add(basschroma_node)
-#network.getNodes().add(salience_node)
+network.getNodes().add(salience_node)
 
 
 # Create the links within the same time slice
 
 ##### PROVA CON NUOVA RETE
-#network.getLinks().add(bayesServer.Link(label_node, chord_node))
+network.getLinks().add(bayesServer.Link(label_node, chord_node))
 #####
 
 network.getLinks().add(bayesServer.Link(chord_node, bass_node))
 network.getLinks().add(bayesServer.Link(key_node, chord_node))
 network.getLinks().add(bayesServer.Link(bass_node, basschroma_node))
-#network.getLinks().add(bayesServer.Link(chord_node, salience_node))
+network.getLinks().add(bayesServer.Link(chord_node, salience_node))
 
 # Create the links between two consecutive time slice
 
@@ -166,7 +178,7 @@ network.getLinks().add(bayesServer.Link(chord_node, chord_node, 1))
 network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
 
 ##### PROVA CON NUOVA RETE
-network.getLinks().add(bayesServer.Link(label_node, chord_node, 1))
+#network.getLinks().add(bayesServer.Link(label_node, chord_node, 1))
 #####
 
 
@@ -186,10 +198,24 @@ key_node.setDistribution(key_table)
 chord_table = chord_node.newDistribution(0).getTable()
 ##### PROVA CON NUOVA RETE
 #chord_iterator = bayesServer.TableIterator(chord_table, [label_variable, key_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(0)])
-chord_iterator = bayesServer.TableIterator(chord_table, [key_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0)])
+chord_iterator = bayesServer.TableIterator(chord_table, [label_variable ,key_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(0)])
 ####
-chord_iterator.copyFrom(prior_chords)
+chord_iterator.copyFrom(np.ravel(prior_chords))
 chord_node.setDistribution(chord_table)
+
+# Label node distribution
+label_table = label_node.newDistribution(0).getTable()
+
+label_iterator = bayesServer.TableIterator(label_table, [label_variable], [java.lang.Integer(0)])
+label_iterator.copyFrom(prior_label)
+label_node.setDistribution(label_table)
+
+# bass node distribution
+
+bass_table = bass_node.newDistribution(0).getTable()
+bass_iterator = bayesServer.TableIterator(bass_table, [chord_variable, bass_variable], [java.lang.Integer(0), java.lang.Integer(0)])
+bass_iterator.copyFrom(np.ravel(prior_bass))
+bass_node.setDistribution(bass_table)
 
 
 # DISTIRIBUTIONS WITHIN SAME TIME SLICE
@@ -197,8 +223,8 @@ chord_node.setDistribution(chord_table)
 # Basschroma node distribution
 
 basschroma_distr = bayesServer.CLGaussian(basschroma_node.newDistribution())
-basschroma_table = basschroma_distr.getTable()
-basschroma_iterator = bayesServer.TableIterator(basschroma_table, [bass_variable], [java.lang.Integer(0)])
+#basschroma_table = basschroma_distr.getTable()
+#basschroma_iterator = bayesServer.TableIterator(basschroma_table, [bass_variable], [java.lang.Integer(0)])
 for i in range(0, n_roots):
     for j in range(0, basschroma_rows):
         basschroma_distr.setMean(i, j, float(bass_to_basschroma_mu[i, j]))
@@ -207,6 +233,20 @@ for i in range(0, n_roots):
         for k in range(0, basschroma_rows):
             basschroma_distr.setCovariance(i, j, k, float(bass_to_basschroma_sigma[i, j, k]))
 basschroma_node.setDistribution(basschroma_distr)
+
+
+chordsalience_distr = bayesServer.CLGaussian(salience_node.newDistribution())
+
+for i in range (0, n_chords_and_no_chord):
+    for j in range(0, salience_rows):
+        chordsalience_distr.setMean(i, j, chord_to_chordsalience_mu[i, j])
+
+for i in range (0, n_chords_and_no_chord):
+    for j in range(0, salience_rows):
+        for k in range(0, salience_rows):
+            chordsalience_distr.setCovariance(i, j, k, chord_to_chordsalience_sigma[i, j, k])
+salience_node.setDistribution(chordsalience_distr)
+
 
 
 # DISTRIBUTIONS WITHIN TWO TIME SLICES
@@ -222,7 +262,7 @@ key_node.getDistributions().set(1, key_trans_table)
 
 ##### PROVA CON NUOVA RETE
 chord_trans_table = chord_node.newDistribution(1).getTable()
-chord_trans_iterator = bayesServer.TableIterator(chord_trans_table, [label_variable, key_variable, chord_variable, chord_variable], [java.lang.Integer(-1), java.lang.Integer(0), java.lang.Integer(-1), java.lang.Integer(0)])
+chord_trans_iterator = bayesServer.TableIterator(chord_trans_table, [label_variable, key_variable, chord_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(-1), java.lang.Integer(0)])
 chord_trans_iterator.copyFrom(np.ravel(tot_to_chord.astype('float')))
 chord_node.getDistributions().set(1, chord_trans_table)
 #####
@@ -234,4 +274,11 @@ bass_trans_iterator = bayesServer.TableIterator(bass_trans_table, [chord_variabl
 bass_trans_iterator.copyFrom(np.ravel(chordtransition_to_bass.astype('float')))
 bass_node.getDistributions().set(1, bass_trans_table)
 
-print('tumaputtana')
+
+#### Validation
+
+network.validate(bayesServer.ValidationOptions())
+
+
+### INFERENCE
+

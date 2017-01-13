@@ -184,56 +184,56 @@ def Prevchord_Nextchord_To_Bass():
     return chord_to_bass_prob
 
 
-def Chord_To_Treble_Chromagram():
-    # from chordRecognition/chordDetection/TrebleChromaGivenChordModel
-    # without key dipendence
-    # this dependence will produce the one between chord salience and chord
-    # I'm going to compute the parameters for a gaussian distribution
-    # in this implementation defaul sigma and chord sigma are both = 0.2 (therefore it's not useful), still
-    # it's possible to change manually the parameters
-
-    # params
-    treb_chrom_size = n_roots
-    key_is_maj = np.ones((1, 12))
-    key_is_maj = np.append(arr=key_is_maj, values=np.zeros((1, n_keys - 12)))
-    key_is_mix = np.roll(key_is_maj, 12)
-    key_is_dor = np.roll(key_is_mix, 12)
-    key_is_min = np.roll(key_is_dor, 12)
-
-    chord_is_maj = np.ones((1,12))
-    chord_is_maj = np.append(arr=chord_is_maj, values=np.zeros((1, n_chords - 12)))
-    chord_is_min = np.roll(chord_is_maj, 12)
-
-    chord_sigmas = [0.2, 0.2, 0.2]
-    default_sigma = 0.2
-
-    chord_template = np.transpose(get_features.Get_Chord_Binary_Model())     # for simplicity I tranpose the matrix
-
-    mu = np.zeros((n_chords + 1, treb_chrom_size))
-    sigma = np.zeros((n_chords + 1, treb_chrom_size, treb_chrom_size))
-
-    for chord_ind in range(0, n_chords):
-        mu[chord_ind, :] = chord_template[chord_ind, :]
-        diag = default_sigma * np.ones((1, 12))
-
-        if chord_is_maj[chord_ind]:
-            chord_tones_sel = np.array([0, 4, 7])        # accordo maggiore
-        else:
-            if chord_is_min[chord_ind]:
-                chord_tones_sel = np.array([0, 3, 7])    # accordi minore
-
-        sel = np.zeros((1, 12), dtype=bool)
-        sel[:,(chord_ind + chord_tones_sel) % 12] = True
-
-        diag[sel] = chord_sigmas
-        sigma[chord_ind, : , :] = np.diag(diag)
-
-
-    # add the no_chord row
-    mu[n_chords_and_no_chord - 1, :] = np.ones(treb_chrom_size)
-    sigma[n_chords_and_no_chord - 1, :, :] = np.identity(treb_chrom_size)
-
-    return mu, sigma
+# def Chord_To_Treble_Chromagram():
+#     # from chordRecognition/chordDetection/TrebleChromaGivenChordModel
+#     # without key dipendence
+#     # this dependence will produce the one between chord salience and chord
+#     # I'm going to compute the parameters for a gaussian distribution
+#     # in this implementation defaul sigma and chord sigma are both = 0.2 (therefore it's not useful), still
+#     # it's possible to change manually the parameters
+#
+#     # params
+#     treb_chrom_size = n_roots
+#     key_is_maj = np.ones((1, 12))
+#     key_is_maj = np.append(arr=key_is_maj, values=np.zeros((1, n_keys - 12)))
+#     key_is_mix = np.roll(key_is_maj, 12)
+#     key_is_dor = np.roll(key_is_mix, 12)
+#     key_is_min = np.roll(key_is_dor, 12)
+#
+#     chord_is_maj = np.ones((1,12))
+#     chord_is_maj = np.append(arr=chord_is_maj, values=np.zeros((1, n_chords - 12)))
+#     chord_is_min = np.roll(chord_is_maj, 12)
+#
+#     chord_sigmas = [0.2, 0.2, 0.2]
+#     default_sigma = 0.2
+#
+#     chord_template = np.transpose(get_features.Get_Chord_Binary_Model())     # for simplicity I tranpose the matrix
+#
+#     mu = np.zeros((n_chords + 1, treb_chrom_size))
+#     sigma = np.zeros((n_chords + 1, treb_chrom_size, treb_chrom_size))
+#
+#     for chord_ind in range(0, n_chords):
+#         mu[chord_ind, :] = chord_template[chord_ind, :]
+#         diag = default_sigma * np.ones((1, 12))
+#
+#         if chord_is_maj[chord_ind]:
+#             chord_tones_sel = np.array([0, 4, 7])        # accordo maggiore
+#         else:
+#             if chord_is_min[chord_ind]:
+#                 chord_tones_sel = np.array([0, 3, 7])    # accordi minore
+#
+#         sel = np.zeros((1, 12), dtype=bool)
+#         sel[:,(chord_ind + chord_tones_sel) % 12] = True
+#
+#         diag[sel] = chord_sigmas
+#         sigma[chord_ind, : , :] = np.diag(diag)
+#
+#
+#     # add the no_chord row
+#     mu[n_chords_and_no_chord - 1, :] = np.ones(treb_chrom_size)
+#     sigma[n_chords_and_no_chord - 1, :, :] = np.identity(treb_chrom_size)
+#
+#     return mu, sigma
 
 
 def Mode_To_Prevchord_Nextchord():
@@ -361,6 +361,7 @@ def Labels_To_Prevchord_Nextchord():
     a[11, 6] = 0.375000000000000
     return a
 
+
 # Da chiarire: perchè il bass chromagram ha 13 righe? (il treble chromagram ne ha 12)
 def Bass_To_Bass_Chromagram():
 
@@ -368,13 +369,27 @@ def Bass_To_Bass_Chromagram():
     BasCsize = 12
     notes = np.identity(Bsize)
     mu = np.zeros((Bsize, BasCsize), dtype=float)
-    sigma = np.zeros((Bsize, BasCsize, BasCsize, ))
+    sigma = np.zeros((Bsize, BasCsize, BasCsize))
 
     for bassInd in range(0, Bsize):
         a = np.transpose(notes[bassInd, :])
         mu[bassInd, :] = np.array(a)
         sigma[bassInd, :, :] = 0.1 * np.identity(BasCsize)
     return mu, sigma
+
+
+def Chord_To_ChordSalience():
+
+    chord_salience_size = n_chords_and_no_chord
+    mu = np.identity(chord_salience_size, dtype='float')
+    sigma = np.zeros((n_chords_and_no_chord, chord_salience_size, chord_salience_size), dtype='float')
+    for i in range(0, n_chords_and_no_chord):
+        sigma[i, :, :] = np.identity(chord_salience_size, dtype='float')*0.2
+
+    return [mu, sigma]
+
+
+
 
 
 if __name__=='__main__':
@@ -384,4 +399,4 @@ if __name__=='__main__':
     #
     # trans_prob = key_to_key(chroma)
     #print(trans_prob)
-    print(Prevchord_Nextchord_To_Bass())
+    print(Chroma_To_ChordSalience())
