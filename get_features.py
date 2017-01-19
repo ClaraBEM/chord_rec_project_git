@@ -1,6 +1,6 @@
 import vamp
 import numpy as np
-# import librosa
+import librosa
 
 
 def Get_Chromagram(data, rate):
@@ -88,19 +88,19 @@ def Get_Key_Binary_Model():
     return key_template
 
 
-# CONTROLLLAAAAAAAAAAAAA se conviene mandare in input chromgram direttamente
+# CONTROLLLAAAAAAAAAAAAA se conviene mandare in input chromagram direttamente
 def Get_Chord_Salience(data, rate):
     [step, chromagram] = Get_Chromagram(data, rate)
+    n_chords = 24
     eps = 2.2204e-16
-
+    [row, col] = chromagram.shape
     chord_template = Get_Chord_Binary_Model()
-    distance_matrix = np.zeros(chromagram.shape)
-    chord_salience = np.zeros(chromagram.shape)
-    row = chromagram.shape[0]
-    col = chromagram.shape[1]
+    distance_matrix = np.zeros([n_chords, col])
+    chord_salience = np.zeros([n_chords, col])
+
     for t in range(0, col):
-        for k in range(0, row):
-            sum = 0;
+        for k in range(0, n_chords):
+            sum = 0
             for p in range(0, row):
                 # se il numeratore del logaritmo è = 0 log(0)= -inf quindi lo sostituiamo con un epsilon
                 if chord_template[p, k] == 0:
@@ -122,11 +122,8 @@ def Get_Chord_Salience(data, rate):
 
 
 if __name__=='__main__':
-    print(Get_Key_Binary_Model())
 
-#     path = "test.mp3"
-#     data, rate = librosa.load(path)
-#     #[step, chroma] = get_chromagram(data, rate)
-#     #print(chroma)
-#     beat = get_beat(data,rate)
-#     print(beat)
+    path = "test.mp3"
+    data, rate = librosa.load(path)
+    [step, cs] = Get_Chord_Salience(data, rate)
+    print(cs.shape)

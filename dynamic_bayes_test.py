@@ -319,25 +319,26 @@ for i in range(0, len(basschroma_variables)):
 # salience evidence
 
 chordsalience_and_no_chord = np.r_[ChordSalience.synch_chord_salience, np.zeros([1, len(Beat.beat)])]
-for i in range(0, len(salience_variables)):
-    chordsalience_double = JArray(java.lang.Double, 1)(end_time or chordsalience_and_no_chord[i, :])
-    inference.getEvidence().set(salience_variables[i], chordsalience_double, 0, 0, end_time)
 
+for i in range(0, len(salience_variables)):
+    for j in range(0, len(Beat.beat)):
+        chordsalience_value = java.lang.Double(chordsalience_and_no_chord[i, j])
+        inference.getEvidence().set(salience_variables[i], chordsalience_value, java.lang.Integer(j))
 
 
 # SET QUERY
 
-chords_query = bayesServer.Table(chord_variable, java.lang.Integer(1))
+chords_query = bayesServer.Table(chord_variable, java.lang.Integer(10))
 
 inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chords_query))
 
-#inference.query(query_options, query_output)
+inference.query(query_options, query_output)
 
 print(inference.getEvidence().size())
 
-#state_context = bayesServer.StateContext(chord_states[0], java.lang.Integer(1))
+state_context = bayesServer.StateContext(chord_states[0], java.lang.Integer(10))
 
-#print(chords_query.get([state_context]))
+print(chords_query.get([state_context]))
 
 
 print('tuma')
