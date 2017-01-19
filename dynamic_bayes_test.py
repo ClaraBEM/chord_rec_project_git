@@ -3,6 +3,8 @@ import numpy as np
 
 import transition_functions
 import prior_probabilities
+import classes_definition
+import librosa
 
 max_label = 4
 
@@ -71,7 +73,7 @@ chordtransition_to_bass = transition_functions.Prevchord_Nextchord_To_Bass()
 
 # BAYES SERRVER LIBRARY SETUP
 
-classpath = '/Users/Clara/Downloads/bayesserver-7.9/Java/bayesserver-7.9.jar'
+classpath = '/Users/Clara/Downloads/bayesserver-7.10/Java/bayesserver-7.10.jar'
 
 startJVM('/Library/Java/JavaVirtualMachines/jdk1.7.0_51.jdk/Contents/Home/jre/lib/jli/libjli.dylib', "-Djava.class.path=%s" %classpath)
 
@@ -282,3 +284,21 @@ network.validate(bayesServer.ValidationOptions())
 
 ### INFERENCE
 
+path = "testcorto.wav"
+[data, rate] = librosa.load(path)
+
+Beat = classes_definition.BeatLabelNode(data, rate)
+BassChromagram = classes_definition.BassChromagramNode(data, rate, Beat.beat)
+ChordSalience = classes_definition.ChordSalienceNode(data, rate, Beat.beat)
+end_time = len(Beat.beat)
+
+
+inference = bayesServer.inference.VariableEliminationInference(network)
+
+
+
+label_double = JArray(java.lang.Double, 1)(end_time or Beat.beat)
+
+inference.getEvidence().set(label_node, label_double, 0, 0, end_time)
+
+print('tuma')

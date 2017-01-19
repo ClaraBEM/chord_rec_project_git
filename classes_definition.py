@@ -39,5 +39,5 @@ class ChromagramNode:
 class ChordSalienceNode:
     def __init__(self,data,rate,beat):
         ChordSalienceNode.step, chord_salience_matrix = get_features.Get_Chord_Salience(data, rate)
-        ChordSalienceNode.synch_chord_salience = beat_synch.beat_synch(chord_salience_matrix, beat, ChordSalienceNode.step)
+        ChordSalienceNode.synch_chord_salience = beat_synch.Beat_Synchronization(chord_salience_matrix, beat, ChordSalienceNode.step)
 
