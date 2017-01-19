@@ -293,12 +293,51 @@ ChordSalience = classes_definition.ChordSalienceNode(data, rate, Beat.beat)
 end_time = len(Beat.beat)
 
 
-inference = bayesServer.inference.VariableEliminationInference(network)
+inference_factory = bayesServer.inference.VariableEliminationInferenceFactory()
+inference = inference_factory.createInferenceEngine(network)
+query_options = inference_factory.createQueryOptions()
+query_output = inference_factory.createQueryOutput()
+
+
+# SET EVIDENCES
+# label evidence
+
+#label_double = JArray(java.lang.Double, 1)(end_time or Beat.label)
+#inference.getEvidence().set(label_node, label_double, 0, 0, end_time)
+for i in range(0, len(Beat.beat)):
+    inference.getEvidence().setState(beat_states[int(Beat.label[i])-1], java.lang.Integer(i))
+
+# basschroma evidence
+
+for i in range(0, len(basschroma_variables)):
+    for j in range(0, len(Beat.beat)):
+        basschroma_value = java.lang.Double(BassChromagram.synch_bass_chromagram[i, j])
+        inference.getEvidence().set(basschroma_variables[i], basschroma_value, java.lang.Integer(j))
 
 
 
-label_double = JArray(java.lang.Double, 1)(end_time or Beat.beat)
+# salience evidence
 
-inference.getEvidence().set(label_node, label_double, 0, 0, end_time)
+chordsalience_and_no_chord = np.r_[ChordSalience.synch_chord_salience, np.zeros([1, len(Beat.beat)])]
+for i in range(0, len(salience_variables)):
+    chordsalience_double = JArray(java.lang.Double, 1)(end_time or chordsalience_and_no_chord[i, :])
+    inference.getEvidence().set(salience_variables[i], chordsalience_double, 0, 0, end_time)
+
+
+
+# SET QUERY
+
+chords_query = bayesServer.Table(chord_variable, java.lang.Integer(1))
+
+inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chords_query))
+
+#inference.query(query_options, query_output)
+
+print(inference.getEvidence().size())
+
+#state_context = bayesServer.StateContext(chord_states[0], java.lang.Integer(1))
+
+#print(chords_query.get([state_context]))
+
 
 print('tuma')
