@@ -47,7 +47,7 @@ prior_bass = prior_probabilities.Prior_Bass_Prob()
 
 key_to_chord = transition_functions.Key_To_Chord()
 
-label_to_chord = transition_functions.Labels_To_Prevchord_NextchordMOD()[max_label - 1, :, :]
+label_to_chord = transition_functions.Labels_To_Prevchord_NextchordMOD()[max_label - 1, :, :, :]
 
 tot_to_chord = np.zeros([max_label, n_keys, n_chords_and_no_chord, n_chords_and_no_chord])
 
@@ -55,13 +55,18 @@ for l in range(0, max_label):
     for c_next in range(0, n_chords_and_no_chord):
         for c_prev in range(0, n_chords_and_no_chord):
             for k in range(0, n_keys):
-                tot_to_chord[l, k, c_prev, c_next] = key_to_chord[k, c_next] * label_to_chord[l, c_prev, c_next]
+                if c_prev == c_next:        # we use label to transition probability only if the chords are different
+                    tot_to_chord[l, k, c_prev, c_next] = key_to_chord[k, c_next]
+                else:
+                    tot_to_chord[l, k, c_prev, c_next] = key_to_chord[k, c_next] * label_to_chord[l, c_prev, c_next]
 
-# controlla il warning (probabilmente una matrice ha tutti 0)
 for l in range(0, max_label):
     for k in range(0, n_keys):
         for c in range(0, n_chords_and_no_chord):
-            tot_to_chord[l, k, c, :] = tot_to_chord[l, k, c, :] / sum(tot_to_chord[l, k, c, :])
+            if (sum(tot_to_chord[l, k, c, :]) != 0):
+                tot_to_chord[l, k, c, :] = tot_to_chord[l, k, c, :] / sum(tot_to_chord[l, k, c, :])
+            else:                                   # if the sum is 0
+                tot_to_chord[l, k, c, :] = 1/n_chords_and_no_chord
 
 [bass_to_basschroma_mu, bass_to_basschroma_sigma] = transition_functions.Bass_To_Bass_Chromagram()
 [chord_to_chordsalience_mu, chord_to_chordsalience_sigma] = transition_functions.Chord_To_ChordSalience()
@@ -71,7 +76,7 @@ key_to_key = transition_functions.Prevkey_To_Nextkey()
 chordtransition_to_bass = transition_functions.Prevchord_Nextchord_To_Bass()
 
 
-# BAYES SERRVER LIBRARY SETUP
+# BAYES SERVER LIBRARY SETUP
 
 classpath = '/Users/Clara/Downloads/bayesserver-7.10/Java/bayesserver-7.10.jar'
 
@@ -164,10 +169,7 @@ network.getNodes().add(salience_node)
 
 # Create the links within the same time slice
 
-##### PROVA CON NUOVA RETE
 network.getLinks().add(bayesServer.Link(label_node, chord_node))
-#####
-
 network.getLinks().add(bayesServer.Link(chord_node, bass_node))
 network.getLinks().add(bayesServer.Link(key_node, chord_node))
 network.getLinks().add(bayesServer.Link(bass_node, basschroma_node))
@@ -179,9 +181,6 @@ network.getLinks().add(bayesServer.Link(key_node, key_node, 1))
 network.getLinks().add(bayesServer.Link(chord_node, chord_node, 1))
 network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
 
-##### PROVA CON NUOVA RETE
-#network.getLinks().add(bayesServer.Link(label_node, chord_node, 1))
-#####
 
 
 ### Set the distributions among the nodes
@@ -198,10 +197,7 @@ key_node.setDistribution(key_table)
 
 # Chord node distribution
 chord_table = chord_node.newDistribution(0).getTable()
-##### PROVA CON NUOVA RETE
-#chord_iterator = bayesServer.TableIterator(chord_table, [label_variable, key_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(0)])
-chord_iterator = bayesServer.TableIterator(chord_table, [label_variable ,key_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(0)])
-####
+chord_iterator = bayesServer.TableIterator(chord_table, [label_variable , key_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(0)])
 chord_iterator.copyFrom(np.ravel(prior_chords))
 chord_node.setDistribution(chord_table)
 
@@ -227,6 +223,7 @@ bass_node.setDistribution(bass_table)
 basschroma_distr = bayesServer.CLGaussian(basschroma_node.newDistribution())
 #basschroma_table = basschroma_distr.getTable()
 #basschroma_iterator = bayesServer.TableIterator(basschroma_table, [bass_variable], [java.lang.Integer(0)])
+
 for i in range(0, n_roots):
     for j in range(0, basschroma_rows):
         basschroma_distr.setMean(i, j, float(bass_to_basschroma_mu[i, j]))
@@ -237,13 +234,17 @@ for i in range(0, n_roots):
 basschroma_node.setDistribution(basschroma_distr)
 
 
+# decidere cast a float dentro funzioni o fuori
+
+# Chord Salience distribution node
+
 chordsalience_distr = bayesServer.CLGaussian(salience_node.newDistribution())
 
-for i in range (0, n_chords_and_no_chord):
+for i in range(0, n_chords_and_no_chord):
     for j in range(0, salience_rows):
         chordsalience_distr.setMean(i, j, chord_to_chordsalience_mu[i, j])
 
-for i in range (0, n_chords_and_no_chord):
+for i in range(0, n_chords_and_no_chord):
     for j in range(0, salience_rows):
         for k in range(0, salience_rows):
             chordsalience_distr.setCovariance(i, j, k, chord_to_chordsalience_sigma[i, j, k])
@@ -262,12 +263,11 @@ key_node.getDistributions().set(1, key_trans_table)
 
 # Chord node
 
-##### PROVA CON NUOVA RETE
 chord_trans_table = chord_node.newDistribution(1).getTable()
 chord_trans_iterator = bayesServer.TableIterator(chord_trans_table, [label_variable, key_variable, chord_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(-1), java.lang.Integer(0)])
 chord_trans_iterator.copyFrom(np.ravel(tot_to_chord.astype('float')))
 chord_node.getDistributions().set(1, chord_trans_table)
-#####
+
 
 # Bass node
 
@@ -284,7 +284,7 @@ network.validate(bayesServer.ValidationOptions())
 
 ### INFERENCE
 
-path = "testcorto.wav"
+path = "test_corto_2.wav"
 [data, rate] = librosa.load(path)
 
 Beat = classes_definition.BeatLabelNode(data, rate)
@@ -298,12 +298,13 @@ inference = inference_factory.createInferenceEngine(network)
 query_options = inference_factory.createQueryOptions()
 query_output = inference_factory.createQueryOutput()
 
+#query_options.setLogLikelihood(True)
+
 
 # SET EVIDENCES
 # label evidence
 
-#label_double = JArray(java.lang.Double, 1)(end_time or Beat.label)
-#inference.getEvidence().set(label_node, label_double, 0, 0, end_time)
+
 for i in range(0, len(Beat.beat)):
     inference.getEvidence().setState(beat_states[int(Beat.label[i])-1], java.lang.Integer(i))
 
@@ -327,18 +328,21 @@ for i in range(0, len(salience_variables)):
 
 
 # SET QUERY
-
-chords_query = bayesServer.Table(chord_variable, java.lang.Integer(10))
-
-inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chords_query))
+chord_queries = []
+for i in range(0, len(Beat.beat)):
+    chord_queries.append(bayesServer.Table(chord_variable, java.lang.Integer(i)))
+    inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chord_queries[i]))
 
 inference.query(query_options, query_output)
 
-print(inference.getEvidence().size())
-
-state_context = bayesServer.StateContext(chord_states[0], java.lang.Integer(10))
-
-print(chords_query.get([state_context]))
+for i in range(0, len(Beat.beat)):
+    chord_prob = np.zeros([n_chords_and_no_chord])
+    for j in range(0, len(chord_states)):
+        state_context = bayesServer.StateContext(chord_states[j], java.lang.Integer(i))
+        chord_prob[j] = (chord_queries[i].get([state_context]))
+    index = np.argmax(chord_prob)
+    value = np.max(chord_prob)
+    print(chord_states[index], value)
 
 
 print('tuma')

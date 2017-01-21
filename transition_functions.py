@@ -332,7 +332,7 @@ def Labels_To_Prevchord_NextchordMOD():
     a[11, 6, :, :] = 0.375000000000000
 
     for i in range(0, n_chords):
-        a[:, :, i, i] = 1
+        a[:, :, i, i] = 0
     return a
 
 
