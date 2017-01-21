@@ -31,13 +31,13 @@ class BassChromagramNode:
 
 class ChromagramNode:
     def __init__(selfs, data, rate, beat):
-        ChromagramNode.step, chomagram = get_features.Get_Chromagram(data, rate)
-        ChromagramNode.synch_chromagram = beat_synch.Beat_Synchronization(chomagram, beat, ChromagramNode.step)
+        ChromagramNode.step, ChromagramNode.chromagram = get_features.Get_Chromagram(data, rate)
+        ChromagramNode.synch_chromagram = beat_synch.Beat_Synchronization(ChromagramNode.chromagram, beat, ChromagramNode.step)
 
 
 
 class ChordSalienceNode:
-    def __init__(self,data,rate,beat):
-        ChordSalienceNode.step, chord_salience_matrix = get_features.Get_Chord_Salience(data, rate)
-        ChordSalienceNode.synch_chord_salience = beat_synch.Beat_Synchronization(chord_salience_matrix, beat, ChordSalienceNode.step)
+    def __init__(self, chromagram, step,  beat):
+        ChordSalienceNode.step, ChordSalienceNode.chord_salience_matrix = get_features.Get_Chord_Salience(step, chromagram)
+        ChordSalienceNode.synch_chord_salience = beat_synch.Beat_Synchronization(ChordSalienceNode.chord_salience_matrix, beat, ChordSalienceNode.step)
 

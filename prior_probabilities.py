@@ -65,6 +65,7 @@ def Prior_Label_Prob(n_labels):
     label_prob = np.full([n_labels], prob)
     return label_prob
 
+
 def Prior_Bass_Prob():
     prob = float(1/n_roots)
     bass_prob = np.full([n_chords_and_no_chord, n_roots], prob)

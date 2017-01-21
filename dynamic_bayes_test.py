@@ -33,13 +33,6 @@ prior_label = prior_probabilities.Prior_Label_Prob(max_label)
 
 prior_bass = prior_probabilities.Prior_Bass_Prob()
 
-
-##### PROVA CON NUOVA RETE (da includere in prior probabilities)
-#for i in range(0, (max_label * n_keys * n_chords)):
-#    prior_chords = np.append(prior_chords, prior_chords[0])
-#####
-
-
 # TRANSITION PROBABILITIES
 
 # for the chord transition probabilities I combine the transition functions and then normalize them
@@ -100,10 +93,10 @@ label_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 # Create KEY NODE
 
-key_labels = ['C:maj', 'Db:maj', 'D:maj', 'Eb:maj', 'E:maj', 'F:maj', 'F#:maj', 'G:maj', 'Ab:maj', 'A:maj', 'B:maj', 'Bb:maj',
-            'C:mix', 'Db:mix', 'D:mix', 'Eb:mix', 'E:mix', 'F:mix', 'Gb:mix', 'G:mix', 'Ab:mix', 'A:mix', 'B:mix', 'Bb:mix',
-            'C:dor', 'Db:dor', 'D:dor', 'Eb:dor', 'E:dor', 'F:dor', 'Gb:dor', 'G:dor', 'Ab:dor', 'A:dor', 'B:dor', 'Bb:dor',
-            'C:min', 'C#:min', 'D:min', 'D#:min', 'E:min', 'F:min', 'F#:min', 'G:min', 'G#:min', 'A:min', 'B:min', 'Bb:min']
+key_labels = ['C:maj', 'Db:maj', 'D:maj', 'Eb:maj', 'E:maj', 'F:maj', 'F#:maj', 'G:maj', 'Ab:maj', 'A:maj', 'Bb:maj', 'B:maj',
+            'C:mix', 'Db:mix', 'D:mix', 'Eb:mix', 'E:mix', 'F:mix', 'Gb:mix', 'G:mix', 'Ab:mix', 'A:mix', 'Bb:mix', 'B:mix',
+            'C:dor', 'Db:dor', 'D:dor', 'Eb:dor', 'E:dor', 'F:dor', 'Gb:dor', 'G:dor', 'Ab:dor', 'A:dor', 'Bb:dor', 'B:dor',
+            'C:min', 'C#:min', 'D:min', 'D#:min', 'E:min', 'F:min', 'F#:min', 'G:min', 'G#:min', 'A:min', 'Bb:min', 'B:min']
 key_states = []
 for i in range(0, n_keys):
     key_states.append(bayesServer.State(key_labels[i]))
@@ -114,8 +107,8 @@ key_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 # Create CHORD NODE
 
-chord_labels = ['C:maj', 'Db:maj', 'D:maj','Eb:maj', 'E:maj','F:maj', 'F#:maj', 'G:maj', 'Ab:maj', 'A:maj', 'B:maj', 'Bb:maj',
-                'C:min', 'C#:min', 'D:min', 'D#:min', 'E:min', 'F:min', 'F#:min', 'G:min', 'G#:min', 'A:min', 'B:min', 'Bb:min', 'no_chord']
+chord_labels = ['C:maj', 'Db:maj', 'D:maj','Eb:maj', 'E:maj','F:maj', 'F#:maj', 'G:maj', 'Ab:maj', 'A:maj', 'Bb:maj', 'B:maj',
+                'C:min', 'C#:min', 'D:min', 'D#:min', 'E:min', 'F:min', 'F#:min', 'G:min', 'G#:min', 'A:min', 'Bb:min', 'B:min',  'no_chord']
 chord_states = []
 for i in range(0, n_chords_and_no_chord):
     chord_states.append(bayesServer.State(chord_labels[i]))
@@ -126,7 +119,7 @@ chord_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
 # Create BASS NODE
 
-bass_labels = ['C', 'C#', 'D', 'D#', 'E', 'F', 'G', 'G#', 'A', 'A#','B', 'B#']
+bass_labels = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 bass_states = []
 for i in range(0, n_roots):
     bass_states.append(bayesServer.State(bass_labels[i]))
@@ -180,7 +173,6 @@ network.getLinks().add(bayesServer.Link(chord_node, salience_node))
 network.getLinks().add(bayesServer.Link(key_node, key_node, 1))
 network.getLinks().add(bayesServer.Link(chord_node, chord_node, 1))
 network.getLinks().add(bayesServer.Link(chord_node, bass_node, 1))
-
 
 
 ### Set the distributions among the nodes
@@ -284,12 +276,13 @@ network.validate(bayesServer.ValidationOptions())
 
 ### INFERENCE
 
-path = "test_corto_2.wav"
+path = "aguilera.wav"
 [data, rate] = librosa.load(path)
 
 Beat = classes_definition.BeatLabelNode(data, rate)
 BassChromagram = classes_definition.BassChromagramNode(data, rate, Beat.beat)
-ChordSalience = classes_definition.ChordSalienceNode(data, rate, Beat.beat)
+Chromagram = classes_definition.ChromagramNode(data, rate, Beat.beat)
+ChordSalience = classes_definition.ChordSalienceNode(Chromagram.chromagram, Chromagram.step, Beat.beat)
 end_time = len(Beat.beat)
 
 
@@ -343,6 +336,41 @@ for i in range(0, len(Beat.beat)):
     index = np.argmax(chord_prob)
     value = np.max(chord_prob)
     print(chord_states[index], value)
+
+# key_queries = []
+# for i in range(0, len(Beat.beat)):
+#     key_queries.append(bayesServer.Table(key_variable, java.lang.Integer(i)))
+#     inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(key_queries[i]))
+#
+# inference.query(query_options, query_output)
+#
+# for i in range(0, len(Beat.beat)):
+#     key_prob = np.zeros([n_keys])
+#     for j in range(0, len(key_states)):
+#         key_context = bayesServer.StateContext(key_states[j], java.lang.Integer(i))
+#         key_prob[j] = (key_queries[i].get([key_context]))
+#     index = np.argmax(key_prob)
+#     value = np.max(key_prob)
+#     print(key_states[index], value)
+
+
+# bass_queries = []
+# for i in range(0, len(Beat.beat)):
+#     bass_queries.append(bayesServer.Table(bass_variable, java.lang.Integer(i)))
+#     inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(bass_queries[i]))
+#
+# inference.query(query_options, query_output)
+#
+# for i in range(0, len(Beat.beat)):
+#     bass_prob = np.zeros([n_roots])
+#     for j in range(0, len(bass_states)):
+#         state_context = bayesServer.StateContext(bass_states[j], java.lang.Integer(i))
+#         bass_prob[j] = (bass_queries[i].get([state_context]))
+#     index = np.argmax(bass_prob)
+#     value = np.max(bass_prob)
+#     print(bass_states[index], value)
+
+print(len(Beat.beat))
 
 
 print('tuma')

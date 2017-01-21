@@ -1,7 +1,7 @@
 import numpy as np
 import librosa
 import get_features
-
+import scipy.io as sio
 
 # CONVENZIONE : nelle matrici di transizione / matrici di sigma, l'ultima dimensione è l'ouput, la prima / le prime sono gli input
 
@@ -31,35 +31,38 @@ def Prevkey_To_Nextkey():
     circle_fifth_distance = [0, 5, 2, 3, 4, 1, 6, 1, 4, 3, 2, 5]
 
     # 1) first we compute the musicological based key transition
-    key_to_key = np.zeros((n_key_modes*n_roots, n_key_modes*n_roots))
-    for next_key_mode in range(0, n_key_modes):
-        for next_key_root in range(0, n_roots):
-            for prev_key_mode in range(0, n_key_modes):
-                for prev_key_root in range(0, n_roots):
+    key_to_key = np.zeros((n_keys, n_keys))
 
-                    prev_key_index = prev_key_mode * n_roots + prev_key_root
-                    next_key_index = next_key_mode * n_roots+ next_key_root
-                    prev_maj_key_equivalent = (prev_key_root + 5 * prev_key_mode) % n_roots + 1
-                    next_maj_key_equivalent = (next_key_root + 5 * next_key_mode) % n_roots + 1
+    # we use for computations indexes+1 (as in Matlab), for indexing we shift them for Python
+    for next_key_mode in range(1, n_key_modes+1):
+        for next_key_root in range(1, n_roots+1):
+            for prev_key_mode in range(1, n_key_modes+1):
+                for prev_key_root in range(1, n_roots+1):
+
+                    prev_key_index = (prev_key_mode - 1) * n_roots + prev_key_root
+                    next_key_index = (next_key_mode -1) * n_roots + next_key_root
+                    prev_maj_key_equivalent = (prev_key_root + 5 * (prev_key_mode - 1)) % n_roots + 1
+                    next_maj_key_equivalent = (next_key_root + 5 * (next_key_mode - 1)) % n_roots + 1
                     next_eq_to_prev_eq = (next_maj_key_equivalent - prev_maj_key_equivalent) % n_roots
 
                     if prev_key_index == next_key_index:
-                        key_to_key[prev_key_index, next_key_index] = same_key_prob
+                        key_to_key[prev_key_index - 1, next_key_index - 1] = same_key_prob
                     else:
-                        key_to_key[prev_key_index, next_key_index] = np.power(gamma_c, (circle_fifth_distance[next_eq_to_prev_eq] + 1))
+                        key_to_key[prev_key_index - 1, next_key_index - 1] = np.power(gamma_c, (circle_fifth_distance[next_eq_to_prev_eq + 1 - 1] + 1))
 
                     if next_key_root == prev_key_root: #parallel case
-                        key_to_key[prev_key_index, next_key_index] = key_to_key[prev_key_index, next_key_index] * parallel_key_bonus
-                    else:  #diatonic case
-                        key_to_key[prev_key_index, next_key_index] = key_to_key[prev_key_index, next_key_index] * diatonic_key_malus
+                        key_to_key[prev_key_index - 1, next_key_index - 1] = key_to_key[prev_key_index - 1, next_key_index - 1] * parallel_key_bonus
+                    else:
+                        if (prev_maj_key_equivalent - next_maj_key_equivalent) % n_roots == 0:              #diatonic case
+                            key_to_key[prev_key_index - 1, next_key_index - 1] = key_to_key[prev_key_index - 1, next_key_index - 1] * diatonic_key_malus
 
     # normalization for stochastic row vectors
     key_to_key_prob = np.zeros((n_key_modes*n_roots, n_key_modes*n_roots))
-    for i in range(0, n_key_modes * n_roots):
+    for i in range(0, n_keys):
         key_to_key_prob[i, :] = key_to_key[i, :] / np.sum(key_to_key[i, :])
 
     # 2) now compute key root salience vector= correlation between averaged chromagram and circular shift of key profile
-    # ??? non trovo riferimenti su Matlab, non capisco dal pdf
+
 
     return key_to_key_prob
 
@@ -102,66 +105,67 @@ def Key_To_Chord():
 
     # in prob transition matrix we have keys in row, chords on columns
 
-    key_to_chord = np.zeros((n_key_modes * n_roots, n_chord_types * n_roots))
+    key_to_chord = np.zeros((n_keys, n_chords))
 
-    for key_mode in range(0, n_key_modes):
-        for key_root in range(0, n_roots):
-            for chord_root in range(0, n_roots):
-                for chord_type in range(0, n_chord_types):
-                    key_index = key_mode * n_roots + key_root
-                    chord_index = chord_type * n_roots + chord_root
-                    chord_to_key = (chord_root - key_root) % n_roots #+ 1
-                    prob = diatonic_chords[chord_type, key_mode, chord_to_key] * diatonic_prob
+    for key_mode in range(1, n_key_modes + 1):
+        for key_root in range(1, n_roots + 1):
+            for chord_root in range(1, n_roots + 1):
+                for chord_type in range(1, n_chord_types + 1):
+                    prob = 0
+                    key_index = (key_mode - 1) * n_roots + key_root
+                    chord_index = (chord_type - 1) * n_roots + chord_root
 
+                    chord_to_key = (chord_root - key_root) % n_roots + 1
+                    prob = diatonic_chords[chord_type - 1, key_mode - 1, chord_to_key - 1] * diatonic_prob
                     # we transform probability in a tuple and the compute the max
-                    if chord_type == maj_chord_index:
-                        prob = [prob, secondary_dominant[key_mode, chord_to_key] * secondary_dominant_probability]
+                    if chord_type == (maj_chord_index + 1):
+                        prob = [prob, secondary_dominant[key_mode - 1, chord_to_key - 1] * secondary_dominant_probability]
                     else:
-                        if chord_type == min_chord_index:
-                            prob = [prob, secondary_subdominant[key_mode, chord_to_key] * secondary_subdominant_probability]
+                        if chord_type == (min_chord_index + 1):
+                            prob = [prob, secondary_subdominant[key_mode - 1, chord_to_key - 1] * secondary_subdominant_probability]
+                    key_to_chord[key_index - 1, chord_index - 1] = np.max(prob)
 
-                key_to_chord[key_index, chord_index] = max(prob)
-
-    # non ho riferimenti nel pdf ma aggiungo una colonna di probabilità che non ci sia alcun accordo
+    # no chord probability
     no_chord_column = no_chord_prob * np.ones((n_keys, 1))
     key_to_chord_no_chord = np.append(arr=key_to_chord, values=no_chord_column, axis=1)
 
     # substitute all elements = 0 with epsilon
     sel = (key_to_chord_no_chord == 0)
     key_to_chord_no_chord[sel] = epsilon
-
-    key_to_chord_prob = np.zeros(shape=(n_key_modes * n_roots, n_chord_types * n_roots + 1))
-
+    key_to_chord_prob = np.zeros([n_keys, n_chords_and_no_chord])
     # normalization for statistic row vectors
-    for i in range(0, n_chord_types * n_roots + 1):
+    for i in range(0, n_keys):
         key_to_chord_prob[i, :] = key_to_chord_no_chord[i, :] / np.sum(key_to_chord_no_chord[i, :])
-
-    # in Matlab è previsto che possa essere operata una least square regression ma i parametri non la prevedono
-
     return key_to_chord_prob
+
+
+def Key_To_ChordMATLAB():
+    matrix = sio.loadmat('ChGivenKeyProb.mat')
+    key_to_chord = matrix['ChGivenKeyProb']
+    return(key_to_chord)
 
 
 def Prevchord_Nextchord_To_Bass():
     # da chordRecognition/chordDection/BassGivenChordChangeModel
 
     #params
-    no_chord_col = np.ones((n_roots, 1))
+    no_chord_col = np.ones((1, n_roots))
     bass_roots = n_roots
     chord_template = get_features.Get_Chord_Binary_Model()
-    chord_template = np.append(arr=chord_template, values=no_chord_col, axis=1)
+    chord_template = np.append(arr=chord_template, values=no_chord_col, axis=0)
     bass_prob = np.array([0.8, 0.2])
 
     chord_to_bass = np.zeros((n_chords_and_no_chord, n_chords_and_no_chord, bass_roots))
     for bass_note in range(0, bass_roots):
         for this_chord in range(0, n_chords):               # in this_cord dimension stop a index before, last column(xbass) will be empty
             for prev_chord in range(0, n_chords_and_no_chord):
-                n_chord_notes = sum(chord_template[:, this_chord])
+                n_chord_notes = sum(chord_template[this_chord, :])
 
                 if this_chord == prev_chord:                # we are staying on same chord
                     if (this_chord % 12) == bass_note:      # bass chord is on root
                         chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[0] * 2 / (n_chord_notes + 1)
                     else:
-                        if chord_template[bass_note, this_chord] == 1:  # bass on a chord tone
+                        if chord_template[this_chord, bass_note] == 1:  # bass on a chord tone
                             chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[0] * 1 / (n_chord_notes + 1)
                         else:
                             chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[1] * 1 / (13 - n_chord_notes )
@@ -236,74 +240,69 @@ def Prevchord_Nextchord_To_Bass():
 #     return mu, sigma
 
 
-def Mode_To_Prevchord_Nextchord():
-    # from chordRecognition/ ChordDetection/ chordChangeGivenModeBak
-
-
-    k1 = 10
-    k2 = 15
-    no_chord_col = np.ones((n_roots, 1))
-    chord_template = get_features.Get_Chord_Binary_Model()
-    chord_template = np.append(arr=chord_template, values=no_chord_col, axis=1)
-    key_template = get_features.Get_Key_Binary_Model()
-    mode_to_chord_change = np.zeros((n_key_modes, n_chords_and_no_chord, n_chords_and_no_chord))
-
-    # assign lower weight to transition from tonic, higher weight for transition toward tonic
-    # lower weight for transition without tonic
-
-    # major key
-
-    mode_to_chord_change[maj_key_index, 0, 5] = k1              # C -> F
-    mode_to_chord_change[maj_key_index, 0, 7] = k1              # C -> G
-    mode_to_chord_change[maj_key_index, 7, 0] = k2              # F -> C
-    mode_to_chord_change[maj_key_index, 5, 0] = k2              # G -> C
-
-    mode_to_chord_change[maj_key_index, 5, 7] = k1              # F -> C
-    mode_to_chord_change[maj_key_index, 7, 5] = k1              # C -> F
-
-    mode_to_chord_change[maj_key_index, 3 + 12 - 1, 7] = k1     # Dmin ( 12 octave + 3 second -1) -> G
-    mode_to_chord_change[maj_key_index, 10 + 12 - 1 , 0] = k2   # Am -> C
-
-    # mixolidian key
-
-    mode_to_chord_change[mix_key_index, 0, 5] = k1              # C -> F
-    mode_to_chord_change[mix_key_index, 0, 10] = k1             # C -> Bb
-    mode_to_chord_change[mix_key_index, 5, 0] = k2              # F -> C
-    mode_to_chord_change[mix_key_index, 10, 0] = k2             # Bb -> C
-
-    mode_to_chord_change[mix_key_index, 10, 5] = k1             # Bb -> F
-    mode_to_chord_change[mix_key_index, 5, 10] = k1             # F -> Bb
-    mode_to_chord_change[maj_key_index, 0, 8 + 12 - 1] = k2     # C -> Gm
-    mode_to_chord_change[maj_key_index, 8 + 12 - 1, 0] = k2     # Gm -> C
-
-
-    #dorian key
-
-    mode_to_chord_change[dor_key_index, 1 + 12 - 1, 5] = k1     # Cm -> F
-    mode_to_chord_change[dor_key_index, 1 + 12 - 1, 3] = k1     # Cm -> Eb
-
-    mode_to_chord_change[dor_key_index, 5, 1 + 12 - 1] = k2     # F -> Cm
-    mode_to_chord_change[dor_key_index, 3, 1 + 12 - 1] = k2     # Eb -> Cm
-
-    mode_to_chord_change[dor_key_index, 3, 5] = k1              # Eb -> F
-    mode_to_chord_change[dor_key_index, 5, 3] = k1              # F -> Eb
-
-    mode_to_chord_change[dor_key_index, 5, 10] = k1             # F -> Bb
-    mode_to_chord_change[dor_key_index, 10, 5] = k1             # Bb -> F
-
-    #minor key
-
-    mode_to_chord_change[min_key_index, 1 + 12 - 1, 8] = k1     # Cm -> Ab
-    mode_to_chord_change[min_key_index, 1 + 12 - 1, 10] = k1    # Cm -> Bb
-    mode_to_chord_change[min_key_index, 8, 1 + 12 - 1] = k2     # Ab -> Cm
-    mode_to_chord_change[min_key_index, 1 + 12 - 1, 10] = k2    # Bb -> Cm
-
-    mode_to_chord_change[min_key_index, 8, 10] = k1             # Ab -> Bb
-    mode_to_chord_change[min_key_index, 10, 8] = k1             # Bb -> Ab
-    mode_to_chord_change[min_key_index, 6, 1 + 12 -1] = k2      # G -> Cm
-    mode_to_chord_change[min_key_index, 1 + 12 - 1, 6] = k1     # Cm -> G
-
-    return mode_to_chord_change
+# def Mode_To_Prevchord_Nextchord():
+#     # from chordRecognition/ ChordDetection/ chordChangeGivenModeBak
+#
+#     k1 = 10
+#     k2 = 15
+#     mode_to_chord_change = np.zeros((n_key_modes, n_chords_and_no_chord, n_chords_and_no_chord))
+#
+#     # assign lower weight to transition from tonic, higher weight for transition toward tonic
+#     # lower weight for transition without tonic
+#
+#     # major key
+#
+#     mode_to_chord_change[maj_key_index, 0, 5] = k1              # C -> F
+#     mode_to_chord_change[maj_key_index, 0, 7] = k1              # C -> G
+#     mode_to_chord_change[maj_key_index, 7, 0] = k2              # F -> C
+#     mode_to_chord_change[maj_key_index, 5, 0] = k2              # G -> C
+#
+#     mode_to_chord_change[maj_key_index, 5, 7] = k1              # F -> C
+#     mode_to_chord_change[maj_key_index, 7, 5] = k1              # C -> F
+#
+#     mode_to_chord_change[maj_key_index, 3 + 12 - 1, 7] = k1     # Dmin ( 12 octave + 3 second -1) -> G
+#     mode_to_chord_change[maj_key_index, 10 + 12 - 1 , 0] = k2   # Am -> C
+#
+#     # mixolidian key
+#
+#     mode_to_chord_change[mix_key_index, 0, 5] = k1              # C -> F
+#     mode_to_chord_change[mix_key_index, 0, 10] = k1             # C -> Bb
+#     mode_to_chord_change[mix_key_index, 5, 0] = k2              # F -> C
+#     mode_to_chord_change[mix_key_index, 10, 0] = k2             # Bb -> C
+#
+#     mode_to_chord_change[mix_key_index, 10, 5] = k1             # Bb -> F
+#     mode_to_chord_change[mix_key_index, 5, 10] = k1             # F -> Bb
+#     mode_to_chord_change[maj_key_index, 0, 8 + 12 - 1] = k2     # C -> Gm
+#     mode_to_chord_change[maj_key_index, 8 + 12 - 1, 0] = k2     # Gm -> C
+#
+#
+#     #dorian key
+#
+#     mode_to_chord_change[dor_key_index, 1 + 12 - 1, 5] = k1     # Cm -> F
+#     mode_to_chord_change[dor_key_index, 1 + 12 - 1, 3] = k1     # Cm -> Eb
+#
+#     mode_to_chord_change[dor_key_index, 5, 1 + 12 - 1] = k2     # F -> Cm
+#     mode_to_chord_change[dor_key_index, 3, 1 + 12 - 1] = k2     # Eb -> Cm
+#
+#     mode_to_chord_change[dor_key_index, 3, 5] = k1              # Eb -> F
+#     mode_to_chord_change[dor_key_index, 5, 3] = k1              # F -> Eb
+#
+#     mode_to_chord_change[dor_key_index, 5, 10] = k1             # F -> Bb
+#     mode_to_chord_change[dor_key_index, 10, 5] = k1             # Bb -> F
+#
+#     #minor key
+#
+#     mode_to_chord_change[min_key_index, 1 + 12 - 1, 8] = k1     # Cm -> Ab
+#     mode_to_chord_change[min_key_index, 1 + 12 - 1, 10] = k1    # Cm -> Bb
+#     mode_to_chord_change[min_key_index, 8, 1 + 12 - 1] = k2     # Ab -> Cm
+#     mode_to_chord_change[min_key_index, 1 + 12 - 1, 10] = k2    # Bb -> Cm
+#
+#     mode_to_chord_change[min_key_index, 8, 10] = k1             # Ab -> Bb
+#     mode_to_chord_change[min_key_index, 10, 8] = k1             # Bb -> Ab
+#     mode_to_chord_change[min_key_index, 6, 1 + 12 -1] = k2      # G -> Cm
+#     mode_to_chord_change[min_key_index, 1 + 12 - 1, 6] = k1     # Cm -> G
+#
+#     return mode_to_chord_change
 
 
 def Labels_To_Prevchord_NextchordMOD():
@@ -389,14 +388,10 @@ def Chord_To_ChordSalience():
     return [mu, sigma]
 
 
-
-
-
-if __name__=='__main__':
+#if __name__=='__main__':
     # path = "testcorto.wav"
     # data, rate = librosa.load(path)
     # [step, chroma] = get_features.get_chromagram(data, rate)
     #
     # trans_prob = key_to_key(chroma)
     #print(trans_prob)
-    print(Chroma_To_ChordSalience())
