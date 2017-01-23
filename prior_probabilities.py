@@ -23,26 +23,28 @@ min_key_index = 3
 
 # we are going to use wide chromagram instead treble chromagram for simplicity of implementation
 
-def key_prior_probability(synchronized_chromagram):
-    [pitch_num, frames_num] = synchronized_chromagram.shape
+def Key_Prior_Probability(synchronized_chromagram):
+    [n_pitch, n_frames] = synchronized_chromagram.shape
     key_prob_offset = 1.5
 
-    root_feature = np.zeros([pitch_num, frames_num])
+    root_feature = np.zeros([n_pitch, n_frames])
 
-    for i in range(0, pitch_num):
+    for i in range(0, n_pitch):
         a = np.roll(pitch_profile, i)
-
-        for j in range(0, frames_num):
+        for j in range(0, n_frames):
             b = synchronized_chromagram[:, j]
             if np.std(b) != 0:
-                root_feature[i, j] = np.sum((a - np.mean(a)) * (b - np.mean(b))) / ((12 -1) * np.std(a) * np.std(b))
+                root_feature[i, j] = np.sum((a - np.mean(a)) * (b - np.mean(b))) / ((12 - 1) * np.std(a) * np.std(b))
             else:
                 root_feature[i, j] = 0
 
     root_feature = np.sum(a=root_feature, axis=0)
     root_feature = root_feature + np.abs(min(root_feature))
     key_prob = root_feature / np.sum(root_feature)
-    key_prob = (matlib.repmat(key_prob, 1, 4) + key_prob_offset)/np.sum((matlib.repmat(key_prob, 1, 4))+key_prob_offset)
+    # ho una probabilità per ogni pitch, posso estenderla a ciascuno dei quattro modi?
+
+    # DA DOVE HO PRESO STA ROBA?
+    #key_prob = (matlib.repmat(key_prob, 1, 4) + key_prob_offset)/np.sum((matlib.repmat(key_prob, 1, 4))+key_prob_offset)
 
     # NON MI TORNANO LE DIMENSIONI DELLA KEY PROBABILITY per ora uso una a priori generica
 
@@ -79,7 +81,7 @@ if __name__=='__main__':
     [step, chroma] = get_features.Get_Chromagram(data, rate)
     beat_chroma = beat_synch.Beat_Synchronization(chroma, beat, step)
 
-    out = key_prior_probability(beat_chroma)
+    out = Key_Prior_Probability(beat_chroma)
     print(out)
     # prob = key_probability(beat_chroma)
     # print(prob)

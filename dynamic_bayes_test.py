@@ -116,7 +116,6 @@ chord_variable = bayesServer.Variable('chord', chord_states)
 chord_node = bayesServer.Node('chord', [chord_variable])
 chord_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
 
-
 # Create BASS NODE
 
 bass_labels = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -126,7 +125,6 @@ for i in range(0, n_roots):
 bass_variable = bayesServer.Variable('bass', bass_states)
 bass_node = bayesServer.Node('bass', [bass_variable])
 bass_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
-
 
 # Create BASS CHROMAGRAM NODE
 # create a continue variable for each row of the chromagram
@@ -138,7 +136,6 @@ for i in range(0, basschroma_rows):
     basschroma_variables.append(bayesServer.Variable(basschroma_labels[i], bayesServer.VariableValueType.CONTINUOUS))
 basschroma_node = bayesServer.Node('basschroma', basschroma_variables)
 basschroma_node.setTemporalType(bayesServer.TemporalType.TEMPORAL)
-
 
 # Create SALIENCE NODE
 
@@ -158,7 +155,6 @@ network.getNodes().add(chord_node)
 network.getNodes().add(bass_node)
 network.getNodes().add(basschroma_node)
 network.getNodes().add(salience_node)
-
 
 # Create the links within the same time slice
 
@@ -188,33 +184,31 @@ key_iterator.copyFrom(prior_key)
 key_node.setDistribution(key_table)
 
 # Chord node distribution
+
 chord_table = chord_node.newDistribution(0).getTable()
-chord_iterator = bayesServer.TableIterator(chord_table, [label_variable , key_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(0)])
+chord_iterator = bayesServer.TableIterator(chord_table, [label_variable, key_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(0)])
 chord_iterator.copyFrom(np.ravel(prior_chords))
 chord_node.setDistribution(chord_table)
 
 # Label node distribution
-label_table = label_node.newDistribution(0).getTable()
 
+label_table = label_node.newDistribution(0).getTable()
 label_iterator = bayesServer.TableIterator(label_table, [label_variable], [java.lang.Integer(0)])
 label_iterator.copyFrom(prior_label)
 label_node.setDistribution(label_table)
 
-# bass node distribution
+# Bass node distribution
 
 bass_table = bass_node.newDistribution(0).getTable()
 bass_iterator = bayesServer.TableIterator(bass_table, [chord_variable, bass_variable], [java.lang.Integer(0), java.lang.Integer(0)])
 bass_iterator.copyFrom(np.ravel(prior_bass))
 bass_node.setDistribution(bass_table)
 
-
-# DISTIRIBUTIONS WITHIN SAME TIME SLICE
+# DISTIRBUTIONS WITHIN SAME TIME SLICE
 
 # Basschroma node distribution
 
 basschroma_distr = bayesServer.CLGaussian(basschroma_node.newDistribution())
-#basschroma_table = basschroma_distr.getTable()
-#basschroma_iterator = bayesServer.TableIterator(basschroma_table, [bass_variable], [java.lang.Integer(0)])
 
 for i in range(0, n_roots):
     for j in range(0, basschroma_rows):
@@ -224,7 +218,6 @@ for i in range(0, n_roots):
         for k in range(0, basschroma_rows):
             basschroma_distr.setCovariance(i, j, k, float(bass_to_basschroma_sigma[i, j, k]))
 basschroma_node.setDistribution(basschroma_distr)
-
 
 # decidere cast a float dentro funzioni o fuori
 
@@ -242,8 +235,6 @@ for i in range(0, n_chords_and_no_chord):
             chordsalience_distr.setCovariance(i, j, k, chord_to_chordsalience_sigma[i, j, k])
 salience_node.setDistribution(chordsalience_distr)
 
-
-
 # DISTRIBUTIONS WITHIN TWO TIME SLICES
 
 # Key node
@@ -259,7 +250,6 @@ chord_trans_table = chord_node.newDistribution(1).getTable()
 chord_trans_iterator = bayesServer.TableIterator(chord_trans_table, [label_variable, key_variable, chord_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(-1), java.lang.Integer(0)])
 chord_trans_iterator.copyFrom(np.ravel(tot_to_chord.astype('float')))
 chord_node.getDistributions().set(1, chord_trans_table)
-
 
 # Bass node
 
@@ -302,16 +292,13 @@ for i in range(0, len(Beat.beat)):
     inference.getEvidence().setState(beat_states[int(Beat.label[i])-1], java.lang.Integer(i))
 
 # basschroma evidence
-
 for i in range(0, len(basschroma_variables)):
     for j in range(0, len(Beat.beat)):
         basschroma_value = java.lang.Double(BassChromagram.synch_bass_chromagram[i, j])
         inference.getEvidence().set(basschroma_variables[i], basschroma_value, java.lang.Integer(j))
 
 
-
 # salience evidence
-
 chordsalience_and_no_chord = np.r_[ChordSalience.synch_chord_salience, np.zeros([1, len(Beat.beat)])]
 
 for i in range(0, len(salience_variables)):
@@ -320,22 +307,50 @@ for i in range(0, len(salience_variables)):
         inference.getEvidence().set(salience_variables[i], chordsalience_value, java.lang.Integer(j))
 
 
+### NOTA: mi sono accorta che in matlab viene data una evidence alla volta, frame per frame e poi fatta la query
+
 # SET QUERY
-chord_queries = []
-for i in range(0, len(Beat.beat)):
-    chord_queries.append(bayesServer.Table(chord_variable, java.lang.Integer(i)))
-    inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chord_queries[i]))
 
-inference.query(query_options, query_output)
+# joint_queries = []
+# for i in range(0, len(Beat.beat)):
+#     bass_context = bayesServer.VariableContext(bass_variable, java.lang.Integer(i))
+#     key_context = bayesServer.VariableContext(key_variable, java.lang.Integer(i))
+#     chord_context = bayesServer.VariableContext(chord_variable, java.lang.Integer(i))
+#     joint_queries.append(bayesServer.Table([bass_context, key_context, chord_context]))
+#     inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(joint_queries[i]))
+#
+# inference.query(query_options, query_output)
+# for i in range(0, len(Beat.beat)):
+#     joint_prob = np.zeros([n_roots, n_keys, n_chords_and_no_chord])
+#     for j in range(0, n_chords_and_no_chord):
+#         for k in range(0, n_keys):
+#             for b in range(0, n_roots):
+#                 chord_context = bayesServer.StateContext(chord_states[j], java.lang.Integer(i))
+#                 bass_context = bayesServer.StateContext(bass_states[b], java.lang.Integer(i))
+#                 key_context = bayesServer.StateContext(key_states[k], java.lang.Integer(i))
+#                 joint_prob[b, k, j] = joint_queries[i].get([bass_context, key_context, chord_context])
+#     index = np.argmax(joint_prob)
+#     multi_index = np.unravel_index(index, joint_prob.shape)
+#     value = np.max(joint_prob)
+#     print(chord_states[multi_index[0]], value)
 
-for i in range(0, len(Beat.beat)):
-    chord_prob = np.zeros([n_chords_and_no_chord])
-    for j in range(0, len(chord_states)):
-        state_context = bayesServer.StateContext(chord_states[j], java.lang.Integer(i))
-        chord_prob[j] = (chord_queries[i].get([state_context]))
-    index = np.argmax(chord_prob)
-    value = np.max(chord_prob)
-    print(chord_states[index], value)
+
+# chord_queries = []
+# for i in range(0, len(Beat.beat)):
+#     chord_queries.append(bayesServer.Table(chord_variable, java.lang.Integer(i)))
+#     inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chord_queries[i]))
+#
+# inference.query(query_options, query_output)
+#
+# for i in range(0, len(Beat.beat)):
+#     chord_prob = np.zeros([n_chords_and_no_chord])
+#     for j in range(0, len(chord_states)):
+#         state_context = bayesServer.StateContext(chord_states[j], java.lang.Integer(i))
+#         chord_prob[j] = (chord_queries[i].get([state_context]))
+#     index = np.argmax(chord_prob)
+#     value = np.max(chord_prob)
+#     print(chord_states[index], value)
+
 
 # key_queries = []
 # for i in range(0, len(Beat.beat)):

@@ -18,7 +18,7 @@ mix_key_index = 1
 dor_key_index = 2
 min_key_index = 3
 
-
+# DA CONTROLLARE
 def Prevkey_To_Nextkey():
     # da chordRecognition/ChordDetection/KeyTransModel.m
     # da 4.2.5 Key Node
@@ -66,7 +66,7 @@ def Prevkey_To_Nextkey():
 
     return key_to_key_prob
 
-
+# OK
 def Key_To_Chord():
     # da ChordRecognition/chordDetection/ChordGivenKeyModel.m
     # da 4.2.6 Chord Node
@@ -138,15 +138,9 @@ def Key_To_Chord():
         key_to_chord_prob[i, :] = key_to_chord_no_chord[i, :] / np.sum(key_to_chord_no_chord[i, :])
     return key_to_chord_prob
 
-
-def Key_To_ChordMATLAB():
-    matrix = sio.loadmat('ChGivenKeyProb.mat')
-    key_to_chord = matrix['ChGivenKeyProb']
-    return(key_to_chord)
-
-
+# OK
 def Prevchord_Nextchord_To_Bass():
-    # da chordRecognition/chordDection/BassGivenChordChangeModel
+    # da chordRecognition/chordDetection/BassGivenChordChangeModel
 
     #params
     no_chord_col = np.ones((1, n_roots))
@@ -167,25 +161,26 @@ def Prevchord_Nextchord_To_Bass():
                     else:
                         if chord_template[this_chord, bass_note] == 1:  # bass on a chord tone
                             chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[0] * 1 / (n_chord_notes + 1)
-                        else:
-                            chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[1] * 1 / (13 - n_chord_notes )
+                        # non so da dove ho preso sta roba, l'ho levata
+                        #else:
+                        #    chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[1] * 1 / (13 - n_chord_notes )
                 else:                                       # in case of chord changing
                     if (this_chord % 12) == bass_note:
                         chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[0]
                     else:
-                        chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[1] / (12 -1)
+                        chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[1] / (12 - 1)
 
     # add the no_chord to the last columns: in case there is no chord before all bass roots are equiprobable
     for prev_chord in range(0, n_chords_and_no_chord):
         chord_to_bass[prev_chord, n_chords_and_no_chord - 1, :] = np.ones((1, 1, bass_roots)) / bass_roots
 
-    # normalization for statistic row vectors (CONTROLLA: NORMALIZZO L'ULTIMA DIMENSIONE cioè l'output (le righe nei casi precedenti)
-    chord_to_bass_prob = np.zeros([n_chords_and_no_chord, n_chords_and_no_chord, bass_roots])
+     #normalization for statistic row vectors (CONTROLLA: NORMALIZZO L'ULTIMA DIMENSIONE cioè l'output (le righe nei casi precedenti)
+    chord_to_bass_prob = np.empty([n_chords_and_no_chord, n_chords_and_no_chord, bass_roots])
     for prev_chord in range(0, n_chords_and_no_chord):
-        for next_chord in range(0,n_chords_and_no_chord):
-            chord_to_bass_prob[prev_chord, next_chord, :] = chord_to_bass[prev_chord, this_chord, :] / sum(chord_to_bass[prev_chord, this_chord, :])
+        for next_chord in range(0, n_chords_and_no_chord):
+            chord_to_bass_prob[prev_chord, next_chord, :] = chord_to_bass[prev_chord, this_chord, :] / np.sum(chord_to_bass[prev_chord, this_chord, :])
 
-    return chord_to_bass_prob
+    return chord_to_bass
 
 
 # def Chord_To_Treble_Chromagram():
@@ -360,7 +355,6 @@ def Labels_To_Prevchord_Nextchord():
     a[11, 6] = 0.375000000000000
     return a
 
-
 # Da chiarire: perchè il bass chromagram ha 13 righe? (il treble chromagram ne ha 12)
 def Bass_To_Bass_Chromagram():
 
@@ -384,7 +378,6 @@ def Chord_To_ChordSalience():
     sigma = np.zeros((n_chords_and_no_chord, chord_salience_size, chord_salience_size), dtype='float')
     for i in range(0, n_chords_and_no_chord):
         sigma[i, :, :] = np.identity(chord_salience_size, dtype='float')*0.2
-
     return [mu, sigma]
 
 
@@ -392,6 +385,7 @@ def Chord_To_ChordSalience():
     # path = "testcorto.wav"
     # data, rate = librosa.load(path)
     # [step, chroma] = get_features.get_chromagram(data, rate)
-    #
-    # trans_prob = key_to_key(chroma)
-    #print(trans_prob)
+
+    # matrix = sio.loadmat('MATLAB matrici/ChGivenKeyProb.mat')
+    #key_to_chord = matrix['ChGivenKeyProb']
+
