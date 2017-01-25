@@ -138,7 +138,7 @@ def Key_To_Chord():
         key_to_chord_prob[i, :] = key_to_chord_no_chord[i, :] / np.sum(key_to_chord_no_chord[i, :])
     return key_to_chord_prob
 
-# OK
+# NO
 def Prevchord_Nextchord_To_Bass():
     # da chordRecognition/chordDetection/BassGivenChordChangeModel
 
@@ -147,24 +147,22 @@ def Prevchord_Nextchord_To_Bass():
     bass_roots = n_roots
     chord_template = get_features.Get_Chord_Binary_Model()
     chord_template = np.append(arr=chord_template, values=no_chord_col, axis=0)
-    bass_prob = np.array([0.8, 0.2])
+    bass_prob = np.array([0.8, 0.2], dtype='float')
 
-    chord_to_bass = np.zeros((n_chords_and_no_chord, n_chords_and_no_chord, bass_roots))
+    chord_to_bass = np.zeros((n_chords_and_no_chord, n_chords_and_no_chord, bass_roots), dtype='float')
     for bass_note in range(0, bass_roots):
         for this_chord in range(0, n_chords):               # in this_cord dimension stop a index before, last column(xbass) will be empty
             for prev_chord in range(0, n_chords_and_no_chord):
-                n_chord_notes = sum(chord_template[this_chord, :])
+                n_chord_notes = np.sum(chord_template[this_chord, :])
 
                 if this_chord == prev_chord:                # we are staying on same chord
                     if (this_chord % 12) == bass_note:      # bass chord is on root
                         chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[0] * 2 / (n_chord_notes + 1)
+                    elif chord_template[this_chord, bass_note] == 1:
+                        chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[0] * 1 / (n_chord_notes + 1)
                     else:
-                        if chord_template[this_chord, bass_note] == 1:  # bass on a chord tone
-                            chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[0] * 1 / (n_chord_notes + 1)
-                        # non so da dove ho preso sta roba, l'ho levata
-                        #else:
-                        #    chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[1] * 1 / (13 - n_chord_notes )
-                else:                                       # in case of chord changing
+                        chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[1] * 1 / (13 - n_chord_notes)
+                else:                                       # in case of chord change
                     if (this_chord % 12) == bass_note:
                         chord_to_bass[prev_chord, this_chord, bass_note] = bass_prob[0]
                     else:
@@ -175,12 +173,18 @@ def Prevchord_Nextchord_To_Bass():
         chord_to_bass[prev_chord, n_chords_and_no_chord - 1, :] = np.ones((1, 1, bass_roots)) / bass_roots
 
      #normalization for statistic row vectors (CONTROLLA: NORMALIZZO L'ULTIMA DIMENSIONE cioè l'output (le righe nei casi precedenti)
-    chord_to_bass_prob = np.empty([n_chords_and_no_chord, n_chords_and_no_chord, bass_roots])
+    chord_to_bass_prob = np.empty([n_chords_and_no_chord, n_chords_and_no_chord, bass_roots], dtype='float')
     for prev_chord in range(0, n_chords_and_no_chord):
         for next_chord in range(0, n_chords_and_no_chord):
             chord_to_bass_prob[prev_chord, next_chord, :] = chord_to_bass[prev_chord, this_chord, :] / np.sum(chord_to_bass[prev_chord, this_chord, :])
 
     return chord_to_bass
+
+def Prevchord_Nextchord_to_Bass_MATLAB():
+    matrix = sio.loadmat('MATLAB matrici/BassTransProb.mat')
+    m = matrix['BassTransProb']
+    return m
+
 
 
 # def Chord_To_Treble_Chromagram():
@@ -381,11 +385,37 @@ def Chord_To_ChordSalience():
     return [mu, sigma]
 
 
-#if __name__=='__main__':
+def Tot_To_Chord(max_label):
+
+    tot_to_chord = np.zeros([max_label, n_keys, n_chords_and_no_chord, n_chords_and_no_chord])
+    key_to_chord = Key_To_Chord()
+
+    label_to_chord = Labels_To_Prevchord_NextchordMOD()[max_label - 1, :, :, :]
+
+    for l in range(0, max_label):
+        for c_next in range(0, n_chords_and_no_chord):
+            for c_prev in range(0, n_chords_and_no_chord):
+                for k in range(0, n_keys):
+                    if c_prev == c_next:  # we use label to transition probability only if the chords are different
+                        tot_to_chord[l, k, c_prev, c_next] = key_to_chord[k, c_next]
+                    else:
+                        tot_to_chord[l, k, c_prev, c_next] = key_to_chord[k, c_next] * label_to_chord[l, c_prev, c_next]
+
+    for l in range(0, max_label):
+        for k in range(0, n_keys):
+            for c in range(0, n_chords_and_no_chord):
+                if sum(tot_to_chord[l, k, c, :]) != 0:
+                    tot_to_chord[l, k, c, :] = tot_to_chord[l, k, c, :] / sum(tot_to_chord[l, k, c, :])
+                else:  # if the sum is 0
+                    tot_to_chord[l, k, c, :] = 1 / n_chords_and_no_chord
+
+    return tot_to_chord
+
+
+if __name__=='__main__':
     # path = "testcorto.wav"
     # data, rate = librosa.load(path)
     # [step, chroma] = get_features.get_chromagram(data, rate)
-
-    # matrix = sio.loadmat('MATLAB matrici/ChGivenKeyProb.mat')
-    #key_to_chord = matrix['ChGivenKeyProb']
-
+    #matrix = sio.loadmat('MATLAB matrici/BassTransProb.mat')
+    #m = matrix['BassTransProb']
+    print(np.max(Labels_To_Prevchord_NextchordMOD(), ))

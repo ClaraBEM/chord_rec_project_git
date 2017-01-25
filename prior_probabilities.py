@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.matlib as matlib
 import librosa
+import classes_definition
 import get_features
 import beat_synch
 
@@ -22,12 +23,13 @@ dor_key_index = 2
 min_key_index = 3
 
 # we are going to use wide chromagram instead treble chromagram for simplicity of implementation
+# return already linearized probability
 
-def Key_Prior_Probability(synchronized_chromagram):
+def Prior_Key_Prob(synchronized_chromagram):
     [n_pitch, n_frames] = synchronized_chromagram.shape
     key_prob_offset = 1.5
 
-    root_feature = np.zeros([n_pitch, n_frames])
+    root_feature = np.zeros([n_pitch, n_frames], dtype='float')
 
     for i in range(0, n_pitch):
         a = np.roll(pitch_profile, i)
@@ -38,19 +40,21 @@ def Key_Prior_Probability(synchronized_chromagram):
             else:
                 root_feature[i, j] = 0
 
-    root_feature = np.sum(a=root_feature, axis=0)
-    root_feature = root_feature + np.abs(min(root_feature))
+    root_feature = np.sum(a=root_feature, axis=1)
+    root_feature = root_feature + np.abs(np.min(root_feature))
     key_prob = root_feature / np.sum(root_feature)
-    # ho una probabilità per ogni pitch, posso estenderla a ciascuno dei quattro modi?
 
-    # DA DOVE HO PRESO STA ROBA?
-    #key_prob = (matlib.repmat(key_prob, 1, 4) + key_prob_offset)/np.sum((matlib.repmat(key_prob, 1, 4))+key_prob_offset)
+    # da CreatBayesianNetModel.m
+    key_prob_matrix = np.empty([n_roots, n_key_modes])
+    for i in range(0, n_key_modes):
+        key_prob_matrix[:, i] = key_prob + key_prob_offset
 
-    # NON MI TORNANO LE DIMENSIONI DELLA KEY PROBABILITY per ora uso una a priori generica
+    key_prob_matrix = key_prob_matrix / np.sum(key_prob_matrix)
 
+    return key_prob_matrix
 
 def Simple_Prior_Key_Prob():
-    prob =  float(1/n_keys)
+    prob = float(1/n_keys)
     key_prob = np.full([n_keys], prob)
     return key_prob
 
@@ -75,13 +79,10 @@ def Prior_Bass_Prob():
 
 
 if __name__=='__main__':
-    path = "testcorto.wav"
+    path = "Test/testcorto.wav"
     data, rate = librosa.load(path)
-    beat = get_features.Get_Beat(data, rate)
-    [step, chroma] = get_features.Get_Chromagram(data, rate)
-    beat_chroma = beat_synch.Beat_Synchronization(chroma, beat, step)
+    beat = classes_definition.Beat(data, rate)
+    SynchChroma = classes_definition.Chromagram(data, rate, beat.beat )
+    k_prob = Prior_Key_Prob(SynchChroma.synch_chromagram)
+    print(k_prob.shape)
 
-    out = Key_Prior_Probability(beat_chroma)
-    print(out)
-    # prob = key_probability(beat_chroma)
-    # print(prob)

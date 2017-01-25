@@ -2,42 +2,42 @@ import beat_synch
 import get_features
 
 
-class KeyNode:
+class Key:
     def __init__(self, root, mode):
         if mode >= 0 and mode <= 3:
-            KeyNode.mode = mode
+            Key.mode = mode
         if root >= 0 and root <=11:
-            KeyNode.root = root
+            Key.root = root
 
 
-class ChordNode:
+class Chord:
     def __init__(self, triad, pitch):
         if triad >= 0 and triad <= 1:
-            ChordNode.triad = triad
+            Chord.triad = triad
         if pitch >= 0 and pitch <= 11:
-            ChordNode.pitch = pitch
+            Chord.pitch = pitch
 
 
-class BeatLabelNode:
+class Beat:
     def __init__(self, data, rate):
-        BeatLabelNode.label = get_features.Get_Label(data, rate)
-        BeatLabelNode.beat = get_features.Get_Beat(data, rate)
+        Beat.label = get_features.Get_Label(data, rate)
+        Beat.beat = get_features.Get_Beat(data, rate)
 
 
-class BassChromagramNode:
+class BassChromagram:
     def __init__(self, data, rate, beat):
-        BassChromagramNode.step, bass_chromagram = get_features.Get_Bass_Chromagram(data, rate)
-        BassChromagramNode.synch_bass_chromagram = beat_synch.Beat_Synchronization(bass_chromagram, beat, BassChromagramNode.step)
+        BassChromagram.step, bass_chromagram = get_features.Get_Bass_Chromagram(data, rate)
+        BassChromagram.synch_bass_chromagram = beat_synch.Beat_Synchronization(bass_chromagram, beat, BassChromagram.step)
 
-class ChromagramNode:
+class Chromagram:
     def __init__(selfs, data, rate, beat):
-        ChromagramNode.step, ChromagramNode.chromagram = get_features.Get_Chromagram(data, rate)
-        ChromagramNode.synch_chromagram = beat_synch.Beat_Synchronization(ChromagramNode.chromagram, beat, ChromagramNode.step)
+        Chromagram.step, Chromagram.chromagram = get_features.Get_Chromagram_QM(data, rate)
+        Chromagram.synch_chromagram = beat_synch.Beat_Synchronization(Chromagram.chromagram, beat, Chromagram.step)
 
 
 
-class ChordSalienceNode:
+class ChordSalience:
     def __init__(self, chromagram, step,  beat):
-        ChordSalienceNode.step, ChordSalienceNode.chord_salience_matrix = get_features.Get_Chord_Salience(step, chromagram)
-        ChordSalienceNode.synch_chord_salience = beat_synch.Beat_Synchronization(ChordSalienceNode.chord_salience_matrix, beat, ChordSalienceNode.step)
+        ChordSalience.step, ChordSalience.chord_salience_matrix = get_features.Get_Chord_Salience(step, chromagram)
+        ChordSalience.synch_chord_salience = beat_synch.Beat_Synchronization(ChordSalience.chord_salience_matrix, beat, ChordSalience.step)
 
