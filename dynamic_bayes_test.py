@@ -16,7 +16,7 @@ n_chords = n_chord_types * n_roots
 n_chords_and_no_chord = n_chords + 1
 
 
-path = "Test/test_ableton.wav"
+path = "Test/testcorto.wav"
 [data, rate] = librosa.load(path)
 
 beat = classes_definition.Beat(data, rate)
@@ -27,26 +27,21 @@ end_time = len(beat.beat)
 
 # PRIOR PROBABILITIES setup for network definition
 
-# prior key probabilities
-
 prior_key = prior_probabilities.Prior_Key_Prob(chromagram.synch_chromagram)
 
-# prior chord probabilities
 prior_chords = prior_probabilities.Prior_Chord_Prob(max_label)
-
-# prior label prob
 
 prior_label = prior_probabilities.Prior_Label_Prob(max_label)
 
-# prior bass prob
-
 prior_bass = prior_probabilities.Prior_Bass_Prob()
+
 
 # TRANSITION PROBABILITIES
 
 tot_to_chord = transition_functions.Tot_To_Chord(max_label)
 
 [bass_to_basschroma_mu, bass_to_basschroma_sigma] = transition_functions.Bass_To_Bass_Chromagram()
+
 [chord_to_chordsalience_mu, chord_to_chordsalience_sigma] = transition_functions.Chord_To_ChordSalience()
 
 key_to_key = transition_functions.Prevkey_To_Nextkey()
@@ -189,7 +184,7 @@ bass_iterator = bayesServer.TableIterator(bass_table, [chord_variable, bass_vari
 bass_iterator.copyFrom(np.ravel(prior_bass))
 bass_node.setDistribution(bass_table)
 
-# DISTIRBUTIONS WITHIN SAME TIME SLICE
+# SET DISTIRBUTIONS WITHIN SAME TIME SLICE
 
 # Basschroma node distribution
 
@@ -220,7 +215,7 @@ for i in range(0, n_chords_and_no_chord):
             chordsalience_distr.setCovariance(i, j, k, chord_to_chordsalience_sigma[i, j, k])
 salience_node.setDistribution(chordsalience_distr)
 
-# DISTRIBUTIONS WITHIN TWO TIME SLICES
+# SET DISTRIBUTIONS WITHIN TWO TIME SLICES
 
 # Key node
 
@@ -252,13 +247,12 @@ network.validate(bayesServer.ValidationOptions())
 ### INFERENCE
 
 
-inference_factory = bayesServer.inference.RelevanceTreeInferenceFactory()
+inference_factory = bayesServer.inference.VariableEliminationInferenceFactory()
 inference = inference_factory.createInferenceEngine(network)
 query_options = inference_factory.createQueryOptions()
 query_output = inference_factory.createQueryOutput()
 query_options.setPropagation(bayesServer.PropagationMethod.MAX)
-
-
+query_options.setLogLikelihood(True)
 
 # SET EVIDENCES
 # label evidence
@@ -280,6 +274,11 @@ for i in range(0, len(salience_variables)):
     for j in range(0, end_time):
         chordsalience_value = java.lang.Double(chordsalience_and_no_chord[i, j])
         inference.getEvidence().set(salience_variables[i], chordsalience_value, java.lang.Integer(j))
+
+chord_queries = []
+for i in range(0, end_time):
+    chord_queries.append(bayesServer.Table(chord_variable, java.lang.Integer(i)))
+    inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chord_queries[i]))
 
 
 # SET QUERY
@@ -310,22 +309,22 @@ for i in range(0, len(salience_variables)):
 #     #print(joint_prob)
 
 
-chord_queries = []
-for i in range(0, end_time):
-    chord_queries.append(bayesServer.Table(chord_variable, java.lang.Integer(i)))
-    inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chord_queries[i]))
-
-inference.query(query_options, query_output)
-
-for i in range(0, end_time):
-    chord_prob = np.zeros([n_chords_and_no_chord])
-    for j in range(0, len(chord_states)):
-        state_context = bayesServer.StateContext(chord_states[j], java.lang.Integer(i))
-        chord_prob[j] = (chord_queries[i].get([state_context]))
-    index = np.argmax(chord_prob)
-    value = np.max(chord_prob)
-    print(chord_prob)
-    print(index, chord_states[index], value)
+# chord_queries = []
+# for i in range(0, end_time):
+#     chord_queries.append(bayesServer.Table(chord_variable, java.lang.Integer(i)))
+#     inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chord_queries[i]))
+#
+# inference.query(query_options, query_output)
+#
+# for i in range(0, end_time):
+#     chord_prob = np.zeros([n_chords_and_no_chord])
+#     for j in range(0, len(chord_states)):
+#         state_context = bayesServer.StateContext(chord_states[j], java.lang.Integer(i))
+#         chord_prob[j] = (chord_queries[i].get([state_context]))
+#     index = np.argmax(chord_prob)
+#     value = np.max(chord_prob)
+#     print(chord_prob)
+#     print(index, chord_states[index], value)
 
 
 # key_queries = []

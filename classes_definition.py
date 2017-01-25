@@ -31,7 +31,7 @@ class BassChromagram:
 
 class Chromagram:
     def __init__(selfs, data, rate, beat):
-        Chromagram.step, Chromagram.chromagram = get_features.Get_Chromagram_QM(data, rate)
+        Chromagram.step, Chromagram.chromagram = get_features.Get_Chromagram(data, rate)
         Chromagram.synch_chromagram = beat_synch.Beat_Synchronization(Chromagram.chromagram, beat, Chromagram.step)
 
 
