@@ -38,7 +38,7 @@ prior_bass = prior_probabilities.Prior_Bass_Prob()
 
 # TRANSITION PROBABILITIES
 
-tot_to_chord = transition_functions.Tot_To_Chord(max_label)
+tot_to_chord = transition_functions.Tot_To_Chord_MOD(max_label)
 
 [bass_to_basschroma_mu, bass_to_basschroma_sigma] = transition_functions.Bass_To_Bass_Chromagram()
 
@@ -184,7 +184,7 @@ bass_iterator = bayesServer.TableIterator(bass_table, [chord_variable, bass_vari
 bass_iterator.copyFrom(np.ravel(prior_bass))
 bass_node.setDistribution(bass_table)
 
-# SET DISTIRBUTIONS WITHIN SAME TIME SLICE
+# SET DISTRIBUTIONS WITHIN SAME TIME SLICE
 
 # Basschroma node distribution
 
@@ -227,7 +227,7 @@ key_node.getDistributions().set(1, key_trans_table)
 # Chord node
 
 chord_trans_table = chord_node.newDistribution(1).getTable()
-chord_trans_iterator = bayesServer.TableIterator(chord_trans_table, [label_variable, key_variable, chord_variable, chord_variable], [java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(-1), java.lang.Integer(0)])
+chord_trans_iterator = bayesServer.TableIterator(chord_trans_table, [chord_variable, label_variable, key_variable, chord_variable], [java.lang.Integer(-1), java.lang.Integer(0), java.lang.Integer(0), java.lang.Integer(0)])
 chord_trans_iterator.copyFrom(np.ravel(tot_to_chord.astype('float')))
 chord_node.getDistributions().set(1, chord_trans_table)
 
@@ -252,7 +252,6 @@ inference = inference_factory.createInferenceEngine(network)
 query_options = inference_factory.createQueryOptions()
 query_output = inference_factory.createQueryOutput()
 query_options.setPropagation(bayesServer.PropagationMethod.MAX)
-query_options.setLogLikelihood(True)
 
 # SET EVIDENCES
 # label evidence
@@ -309,22 +308,22 @@ for i in range(0, end_time):
 #     #print(joint_prob)
 
 
-# chord_queries = []
-# for i in range(0, end_time):
-#     chord_queries.append(bayesServer.Table(chord_variable, java.lang.Integer(i)))
-#     inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chord_queries[i]))
-#
-# inference.query(query_options, query_output)
-#
-# for i in range(0, end_time):
-#     chord_prob = np.zeros([n_chords_and_no_chord])
-#     for j in range(0, len(chord_states)):
-#         state_context = bayesServer.StateContext(chord_states[j], java.lang.Integer(i))
-#         chord_prob[j] = (chord_queries[i].get([state_context]))
-#     index = np.argmax(chord_prob)
-#     value = np.max(chord_prob)
-#     print(chord_prob)
-#     print(index, chord_states[index], value)
+chord_queries = []
+for i in range(0, end_time):
+    chord_queries.append(bayesServer.Table(chord_variable, java.lang.Integer(i)))
+    inference.getQueryDistributions().add(bayesServer.inference.QueryDistribution(chord_queries[i]))
+
+inference.query(query_options, query_output)
+
+for i in range(0, end_time):
+    chord_prob = np.zeros([n_chords_and_no_chord])
+    for j in range(0, len(chord_states)):
+        state_context = bayesServer.StateContext(chord_states[j], java.lang.Integer(i))
+        chord_prob[j] = (chord_queries[i].get([state_context]))
+    index = np.argmax(chord_prob)
+    value = np.max(chord_prob)
+    print(chord_prob)
+    print(index, chord_states[index], value)
 
 
 # key_queries = []
